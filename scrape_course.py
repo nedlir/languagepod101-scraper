@@ -1,20 +1,16 @@
-import os
-
 import requests
 
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
 
 
-load_dotenv(override=True)
+print('Youkoso! Welcome to jpod101-scraper! This script helps you scrape full language courses from sites like japanesepod101.com, spanishpod101.com, chineseclass101.com and more!\n')
 
-# SOURCE_URL and COURSE_URL must be replaced with desired values to scrape
-SOURCE_URL = r'https://www.japanesepod101.com'
-# COURSE_URL should be any of the lessons of the desired course
-COURSE_URL = r'https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116'
+SOURCE_URL = input('Please insert source url, for example: https://www.japanesepod101.com or https://www.spanishpod101.com or https://www.chineseclass101.com\n')
+SOURCE_URL = SOURCE_URL.removesuffix('/')
 LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
-USER = os.getenv('JPOD101_USERNAME')
-PASSWORD = os.getenv('JPOD101_PASSWORD')
+COURSE_URL = input('Please insert first lesson url of the desired course, for example: https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116   or\nhttps://www.spanishpod101.com/lesson/basic-bootcamp-1-a-pleasure-to-meet-you/?lp=425   or\nhttps://www.chineseclass101.com/lesson/absolute-beginner-1-meeting-whats-your-name/?lp=208\n')
+USER = input('Username(mail):')
+PASSWORD = input('Password: ')
 LOGIN_DATA = {
     'amember_login': USER,
     'amember_pass': PASSWORD
@@ -23,13 +19,13 @@ LOGIN_DATA = {
 
 # Logins to the website:
 print('Establishing a new session...')
-with requests.Session() as session:    
+with requests.Session() as session:
     try:
         print(f'Trying to login to {SOURCE_URL}')
         course_response = session.post(LOGIN_URL, data=LOGIN_DATA)
         print(f'Successfully logged in as {USER}')
     except:
-        print('Login Failed, please check login details or internet connection.')
+        print('Login Failed, please check urls input, login details and internet connection.')
         quit()
     try:
         course_source = session.get(COURSE_URL)
@@ -48,7 +44,7 @@ with requests.Session() as session:
 
     print('Lessons URLs successfully listed.')
 
-     # Traverses list of course's lesson urls and downloads them:
+    # Traverses list of course's lesson urls and downloads them:
     file_index = 1  # Used for numbering of file name strings
     for lesson_url in course_urls:
         lesson_source = session.get(lesson_url)
@@ -57,12 +53,14 @@ with requests.Session() as session:
 
         # Downloads lesson audio files:
         if audio_soup:
-            print(f'Downloading Lesson {str(file_index).zfill(2)} - {lesson_soup.title.text}')
+            print(
+                f'Downloading Lesson {str(file_index).zfill(2)} - {lesson_soup.title.text}')
             for audio_file in audio_soup:
                 try:
                     file_url = audio_file['data-trackurl']
                 except:
-                    print('Tag "data-trackurl" was not found, trying to reach "data-url" tag instead')
+                    print(
+                        'Tag "data-trackurl" was not found, trying to reach "data-url" tag instead')
                     try:
                         file_url = audio_file['data-url']
                     except:
@@ -76,11 +74,11 @@ with requests.Session() as session:
                     # Creates a clean file name string:
                     file_prefix = str(file_index).zfill(2)
                     file_body = lesson_soup.title.text
-                    # Escapes OSError: [Errno 22] while file writing: 
+                    # Avoids OSError: [Errno 22] while file writing:
                     invalid_chars = '\/?:*"<>|'
                     for char in invalid_chars:
-	                    file_body = file_body.replace(char, "") 
-                    
+                        file_body = file_body.replace(char, "")
+
                     file_suffix = file_url.split('/')[-1]
                     # Verifis clean version of file name by removing junk sufix string that may appear:
                     if file_suffix[:3].isdigit():
@@ -98,4 +96,4 @@ with requests.Session() as session:
                         print(f'Failed to save {file_name} on local device.')
                     continue
             file_index += 1
-print ('Yatta! Finished downloading the course~')
+print('Yatta! Finished downloading the course~')
