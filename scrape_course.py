@@ -11,7 +11,7 @@ load_dotenv(override=True)
 # SOURCE_URL and COURSE_URL must be replaced with desired values to scrape
 SOURCE_URL = r'https://www.japanesepod101.com'
 # COURSE_URL should be any of the lessons of the desired course
-COURSE_URL = r'https://www.japanesepod101.com/lesson/advanced-audio-blog-s6-1-japanese-tourist-spotshokkaido/?lp=221'
+COURSE_URL = r'https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116'
 LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
 USER = os.getenv('JPOD101_USERNAME')
 PASSWORD = os.getenv('JPOD101_PASSWORD')
@@ -19,6 +19,7 @@ LOGIN_DATA = {
     'amember_login': USER,
     'amember_pass': PASSWORD
 }
+
 
 # Logins to the website:
 print('Establishing a new session...')
@@ -75,8 +76,12 @@ with requests.Session() as session:
                     # Creates a clean file name string:
                     file_prefix = str(file_index).zfill(2)
                     file_body = lesson_soup.title.text
+                    # Escapes OSError: [Errno 22] while file writing: 
+                    invalid_chars = '\/?:*"<>|'
+                    for char in invalid_chars:
+	                    file_body = file_body.replace(char, "") 
+                    
                     file_suffix = file_url.split('/')[-1]
-
                     # Verifis clean version of file name by removing junk sufix string that may appear:
                     if file_suffix[:3].isdigit():
                         file_suffix = file_suffix[4:]
@@ -85,15 +90,12 @@ with requests.Session() as session:
 
                     # Saves file on local folder:
                     try:
-                        with requests.get(file_url) as lesson_response:
-                            try:
-                                with open(file_name, 'wb') as f:
-                                    f.write(lesson_response.content)
-                                    print(f'{file_name} saved on local device!')
-                            except:
-                                print(f'{file_name} saving on local device failed.')
+                        lesson_response = session.get(file_url)
+                        with open(file_name, 'wb') as f:
+                            f.write(lesson_response.content)
+                            print(f'{file_name} saved on local device!')
                     except:
-                        print('Downloading of file failed.')
-                        continue
+                        print(f'Failed to save {file_name} on local device.')
+                    continue
             file_index += 1
 print ('Yatta! Finished downloading the course~')
