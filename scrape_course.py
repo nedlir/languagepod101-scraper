@@ -34,7 +34,11 @@ with requests.Session() as session:
         quit()
 
     # Creates a list of course urls which will be downloaded:
-    course_soup = BeautifulSoup(course_source.text, 'lxml')
+    try:
+        course_soup = BeautifulSoup(course_source.text, 'lxml')
+    except:
+        print("Failed to parse the course's webpage, 'lxml' package might be missing.")
+        quit()
     soup_urls = course_soup.find_all('option')
     course_urls = list()
 
