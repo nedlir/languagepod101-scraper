@@ -71,13 +71,14 @@ with requests.Session() as session:
                         print(f'Could not retrieve URL: {file_url}')
                         continue
 
-                # Creates a file name and verifies that the file is 'mp3' format:
+                # Verifies that the file is 'mp3' format, if so, builds a clean str name for the file:
                 if file_url.endswith('.mp3'):
                     print(f'Successfully retrieved URL: {file_url}')
 
-                    # Creates a clean file name string:
-                    file_prefix = str(file_index).zfill(2)
-                    file_body = lesson_soup.title.text
+                    # Creates a clean file name string with prefix, body and suffix of file name:
+                    file_prefix = str(file_index).zfill(2)  # Numbering of file using the 'file_index' variable
+                    
+                    file_body = lesson_soup.title.text # Main body of file name is taken from page's title
                     # Avoids OSError: [Errno 22] while file writing:
                     invalid_chars = '\/?:*"<>|'
                     for char in invalid_chars:
@@ -85,10 +86,16 @@ with requests.Session() as session:
 
                     file_suffix = file_url.split('/')[-1]
                     # Verifis clean version of file name by removing junk sufix string that may appear:
-                    if file_suffix[:3].isdigit():
-                        file_suffix = file_suffix[4:]
+                    if 'dialog' in file_suffix.lower() or 'dialogue' in file_suffix.lower():
+                        file_suffix = 'Dialogue'
+                    elif 'review' in file_suffix.lower():
+                        file_suffix = 'Review'    
+                    else:
+                        file_suffix = 'Main Lesson'
+                    
+                    file_type = '.mp3'
 
-                    file_name = f'{file_prefix} - {file_body} - {file_suffix}'
+                    file_name = f'{file_prefix} - {file_body} - {file_suffix}{file_type}'
 
                     # Saves file on local folder:
                     try:
@@ -98,6 +105,6 @@ with requests.Session() as session:
                             print(f'{file_name} saved on local device!')
                     except:
                         print(f'Failed to save {file_name} on local device.')
-                    continue
+                        continue
             file_index += 1
 print('Yatta! Finished downloading the course~')
