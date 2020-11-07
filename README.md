@@ -11,7 +11,7 @@
 languagepod101-scraper helps you download full language courses and save them on your local folder as MP3 files.
 The courses are produced and distributed by [Innovative Language](https://www.innovativelanguage.com/online-language-courses) who provides language learning courses from a selection of dozens languages. Each lesson is usually 10-20 minutes long.
 
-To get started, [choose a lnaguage ](https://www.innovativelanguage.com/online-language-courses) course offered by Innovative Language.
+To get started, [choose a language ](https://www.innovativelanguage.com/online-language-courses) course offered by Innovative Language.
 
 ##  :pushpin: Usage
 To use the script, fulfill the requirements and follow the example as demonstrated below.
@@ -28,7 +28,7 @@ To use the script, fulfill the requirements and follow the example as demonstrat
 ###  :bookmark_tabs: Example
 For the sake of example, the process of downloading of a course from [Japanese Pod 101](https://www.japanesepod101.com/) will be demonstrated.
 
-Japanese Pod 101 and all other sites have a similiar structure which looks as following:
+Japanese Pod 101 and all other sites have a similar structure which looks as following:
   ```
   Japanesepod101
   ├─ Level 1 - Absolute Beginner
@@ -86,10 +86,10 @@ Japanese Pod 101 and all other sites have a similiar structure which looks as fo
 ##  :clipboard:	Disclaimer and known issues
 - Any usage of the script is under user's responsibility only. Users of the script must act according to site's terms. 
 
-- As of today, Innovative Lnaguage's terms of use does not forbid usage of crawlers or scrapers on any of their sites.
+- As of today, Innovative Language's terms of use does not forbid usage of crawlers or scrapers on any of their sites.
 This may change in the future, so be aware. 
 
-- If you like the services Innovative Lnaguage provides you should consider a monthly subscription. Basic programs start at around $5 per month and include support from native speaker teachers.
+- If you like the services Innovative Language provides you should consider a monthly subscription. Basic programs start at around $5 per month and include support from native speaker teachers.
 
 - As with all websites, the site's structure may change in the future and thus, as often happens with scraping scripts, deprecate it. It is not really a question of *if* the site's source code will change but rather **when** (so enjoy it while it's still working :grin:).
 
