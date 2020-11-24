@@ -26,21 +26,24 @@ with requests.Session() as session:
         print(f'Trying to login to {SOURCE_URL}')
         course_response = session.post(LOGIN_URL, data=LOGIN_DATA)
         print(f'Successfully logged in as {USER}')
-    except:
+    except Exception as e:
+        print(e)
         print('Login Failed, please check urls input, login details and internet connection.')
-        exit()
+        exit(1)
     try:
         course_source = session.get(COURSE_URL)
-    except:
+    except Exception as e:
+        print(e)
         print('Loading of course URL page failed, please make sure URL is accurate.')
-        exit()
+        exit(1)
 
     # Creates a list of course urls which will be downloaded:
     try:
         course_soup = BeautifulSoup(course_source.text, 'lxml')
-    except:
+    except Exception as e:
+        print(e)
         print("Failed to parse the course's webpage, 'lxml' package might be missing.")
-        exit()
+        exit(1)
     soup_urls = course_soup.find_all('option')
     course_urls = list()
 
@@ -64,12 +67,14 @@ with requests.Session() as session:
             for audio_file in audio_soup:
                 try:
                     file_url = audio_file['data-trackurl']
-                except:
+                except Exception as e:
+        print(e)
                     print(
                         'Tag "data-trackurl" was not found, trying to reach "data-url" tag instead')
                     try:
                         file_url = audio_file['data-url']
-                    except:
+                    except Exception as e:
+        print(e)
                         print(f'Could not retrieve URL: {file_url}')
                         continue
 
@@ -105,7 +110,8 @@ with requests.Session() as session:
                         with open(file_name, 'wb') as f:
                             f.write(lesson_response.content)
                             print(f'{file_name} saved on local device!')
-                    except:
+                    except Exception as e:
+        print(e)
                         print(f'Failed to save {file_name} on local device.')
                         continue
             file_index += 1
