@@ -7,12 +7,13 @@ from bs4 import BeautifulSoup
 
 print('Youkoso! Welcome to language101 scraper! This script helps you scrape full language courses from sites like japanesepod101.com, spanishpod101.com, chineseclass101.com and more!\n')
 
-SOURCE_URL = input('Please insert source url, for example: https://www.japanesepod101.com or https://www.spanishpod101.com or https://www.chineseclass101.com\n')
+SOURCE_URL = input(
+    'Please insert source url, for example: https://www.japanesepod101.com or https://www.spanishpod101.com or https://www.chineseclass101.com\n')
 SOURCE_URL = SOURCE_URL.removesuffix('/')
 LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
-COURSE_URL = input('Please insert first lesson url of the desired course, for example: https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116   or\nhttps://www.spanishpod101.com/lesson/basic-bootcamp-1-a-pleasure-to-meet-you/?lp=425   or\nhttps://www.chineseclass101.com/lesson/absolute-beginner-1-meeting-whats-your-name/?lp=208\n')
+COURSE_URL = input('Please insert first lesson url of the desired course, for example: https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116  or\nhttps://www.spanishpod101.com/lesson/basic-bootcamp-1-a-pleasure-to-meet-you/?lp=425   or\nhttps://www.chineseclass101.com/lesson/absolute-beginner-1-meeting-whats-your-name/?lp=208\n')
 USER = input('Username(mail):')
-PASSWORD = input('Password: ')
+PASSWORD = input('Password:')
 LOGIN_DATA = {
     'amember_login': USER,
     'amember_pass': PASSWORD
@@ -28,7 +29,8 @@ with requests.Session() as session:
         print(f'Successfully logged in as {USER}')
     except Exception as e:
         print(e)
-        print('Login Failed, please check urls input, login details and internet connection.')
+        print(
+            'Login Failed, please check urls input, login details and internet connection.')
         exit(1)
     try:
         course_source = session.get(COURSE_URL)
@@ -68,13 +70,13 @@ with requests.Session() as session:
                 try:
                     file_url = audio_file['data-trackurl']
                 except Exception as e:
-        print(e)
+                    print(e)
                     print(
                         'Tag "data-trackurl" was not found, trying to reach "data-url" tag instead')
                     try:
                         file_url = audio_file['data-url']
                     except Exception as e:
-        print(e)
+                        print(e)
                         print(f'Could not retrieve URL: {file_url}')
                         continue
 
@@ -83,23 +85,27 @@ with requests.Session() as session:
                     print(f'Successfully retrieved URL: {file_url}')
 
                     # Creates a clean file name string with prefix, body and suffix of file name:
-                    file_prefix = str(file_index).zfill(2)  # Numbering of file using the 'file_index' variable
                     
-                    file_body = lesson_soup.title.text # Main body of file name is taken from page's title
+                    # Numbering of file using the 'file_index' variable
+                    file_prefix = str(file_index).zfill(2)
+
+                    # Main body of file name is taken from page's title
+                    file_body = lesson_soup.title.text
                     # Avoids OSError: [Errno 22] while file writing:
                     invalid_chars = '\/?:*"<>|'
                     for char in invalid_chars:
                         file_body = file_body.replace(char, "")
 
                     file_suffix = file_url.split('/')[-1]
+
                     # Verifis clean version of file name by removing junk sufix string that may appear:
                     if 'dialog' in file_suffix.lower() or 'dialogue' in file_suffix.lower():
                         file_suffix = 'Dialogue'
                     elif 'review' in file_suffix.lower():
-                        file_suffix = 'Review'    
+                        file_suffix = 'Review'
                     else:
                         file_suffix = 'Main Lesson'
-                    
+
                     file_type = '.mp3'
 
                     file_name = f'{file_prefix} - {file_body} - {file_suffix}{file_type}'
@@ -111,7 +117,7 @@ with requests.Session() as session:
                             f.write(lesson_response.content)
                             print(f'{file_name} saved on local device!')
                     except Exception as e:
-        print(e)
+                        print(e)
                         print(f'Failed to save {file_name} on local device.')
                         continue
             file_index += 1
