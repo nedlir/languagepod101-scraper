@@ -1,25 +1,28 @@
 #!/usr/bin/env python
-from sys import exit
 
 import requests
-
 from bs4 import BeautifulSoup
+from sys import exit
+from urllib.parse import urlparse
 
+print('Youkoso! Welcome to language101 scraper!\n'
+    'This script helps you scrape full language courses from sites like\n'
+    'japanesepod101.com, spanishpod101.com, chineseclass101.com and more!\n')
 
-print('Youkoso! Welcome to language101 scraper! This script helps you scrape full language courses from sites like japanesepod101.com, spanishpod101.com, chineseclass101.com and more!\n')
-
-SOURCE_URL = input(
-    'Please insert source url, for example: https://www.japanesepod101.com or https://www.spanishpod101.com or https://www.chineseclass101.com\n')
-SOURCE_URL = SOURCE_URL.removesuffix('/')
+COURSE_URL = input('Please insert first lesson URL of the desired course, for example:\n'
+    ' * https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116\n'
+    ' * https://www.spanishpod101.com/lesson/basic-bootcamp-1-a-pleasure-to-meet-you/?lp=425\n'
+    ' * https://www.chineseclass101.com/lesson/absolute-beginner-1-meeting-whats-your-name/?lp=208\n')
+o = urlparse(COURSE_URL)
+SOURCE_URL = f'{o.scheme}://{o.netloc}'
 LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
-COURSE_URL = input('Please insert first lesson url of the desired course, for example: https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116  or\nhttps://www.spanishpod101.com/lesson/basic-bootcamp-1-a-pleasure-to-meet-you/?lp=425   or\nhttps://www.chineseclass101.com/lesson/absolute-beginner-1-meeting-whats-your-name/?lp=208\n')
-USER = input('Username(mail):')
-PASSWORD = input('Password:')
+
+USER = input('Username (email): ')
+PASSWORD = input('Password: ')
 LOGIN_DATA = {
     'amember_login': USER,
     'amember_pass': PASSWORD
 }
-
 
 # Logins to the website:
 print('Establishing a new session...')
@@ -33,6 +36,7 @@ with requests.Session() as session:
         print(
             'Login Failed, please check urls input, login details and internet connection.')
         exit(1)
+
     try:
         course_source = session.get(COURSE_URL)
     except Exception as e:
@@ -47,6 +51,7 @@ with requests.Session() as session:
         print(e)
         print("Failed to parse the course's webpage, 'lxml' package might be missing.")
         exit(1)
+
     soup_urls = course_soup.find_all('option')
     course_urls = list()
 
@@ -122,4 +127,5 @@ with requests.Session() as session:
                         print(f'Failed to save {file_name} on local device.')
                         continue
             file_index += 1
+
 print('Yatta! Finished downloading the course~')
