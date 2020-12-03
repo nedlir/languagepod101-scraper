@@ -1,28 +1,34 @@
 #!/usr/bin/env python
+# language101 scraper helps you scrape full language courses from sites like
+# japanesepod101.com, spanishpod101.com, chineseclass101.com and more!
 
+import argparse
 import requests
 from bs4 import BeautifulSoup
 from sys import exit
 from urllib.parse import urlparse
 
-print('Youkoso! Welcome to language101 scraper!\n'
-    'This script helps you scrape full language courses from sites like\n'
-    'japanesepod101.com, spanishpod101.com, chineseclass101.com and more!\n')
+parser = argparse.ArgumentParser(description='Scrape full language courses by Innovative Language.')
+parser.add_argument('-u', '--username', help='Username (email)')
+parser.add_argument('-p', '--password', help='Password for the course')
+parser.add_argument('--url', help='URL for the first lesson of the course')
 
-COURSE_URL = input('Please insert first lesson URL of the desired course, for example:\n'
+args = parser.parse_args()
+
+USERNAME = args.username or input('Username(mail): ')
+PASSWORD = args.password or input('Password: ')
+COURSE_URL = args.url or input('Please insert first lesson URL of the desired course, for example:\n'
     ' * https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116\n'
     ' * https://www.spanishpod101.com/lesson/basic-bootcamp-1-a-pleasure-to-meet-you/?lp=425\n'
     ' * https://www.chineseclass101.com/lesson/absolute-beginner-1-meeting-whats-your-name/?lp=208\n')
+
+LOGIN_DATA = {
+    'amember_login': USERNAME,
+    'amember_pass': PASSWORD,
+}
 o = urlparse(COURSE_URL)
 SOURCE_URL = f'{o.scheme}://{o.netloc}'
 LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
-
-USER = input('Username (email): ')
-PASSWORD = input('Password: ')
-LOGIN_DATA = {
-    'amember_login': USER,
-    'amember_pass': PASSWORD
-}
 
 # Logins to the website:
 print('Establishing a new session...')
@@ -30,7 +36,7 @@ with requests.Session() as session:
     try:
         print(f'Trying to login to {SOURCE_URL}')
         course_response = session.post(LOGIN_URL, data=LOGIN_DATA)
-        print(f'Successfully logged in as {USER}')
+        print(f'Successfully logged in as {USERNAME}')
     except Exception as e:
         print(e)
         print(
