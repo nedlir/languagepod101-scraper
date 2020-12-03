@@ -1,14 +1,17 @@
-<h1 align="center">:zap: languagepod101-scraper	:zap:</h1>
-<p align="center">
-  <img src="readme\language_selection.jpg" alt="Language selection">
-  <br>
-  <i>languagepod101-scraper is a resource for dozen of language learning courses and study material for FREE.</i>
-</p>
-<hr>
+<div align='center'>
+:zap: languagepod101-scraper :zap:
+==================================
+
+![Languages available](readme/language_selection.jpg)
+
+_languagepod101-scraper is a resource for dozens of language learning courses and study material for FREE._
+</div>
+
+---
 
 ## :mortar_board: About
 
-languagepod101-scraper helps you download full language courses and save them on your local folder as MP3 files.
+languagepod101-scraper helps you download full language courses and save them on your local folder as MP3/MP4 files.
 The courses are produced and distributed by [Innovative Language](https://www.innovativelanguage.com/online-language-courses),
 who provides language learning courses from a selection of dozens of languages. Each lesson is usually 10-20 minutes long.
 
@@ -80,7 +83,7 @@ Japanese Pod 101 and all other sites have a similar structure which looks as fol
   - the email you used to sign up for the course
   - your password for the course
   - the course's lesson URL you have navigated through earlier
-    (in our example: `lesson 01` of the `Lower Beginner Season 1` course).
+    (something like `https://www.japanesepod101.com/lesson/pathway-lessons-117-course-introduction-level-2-japanese/?lp=442`).
 
 - Alternatively, you can pass the data as parameters when invoking the script:
 
@@ -88,7 +91,7 @@ Japanese Pod 101 and all other sites have a similar structure which looks as fol
   ./language101_scraper.py -u $USERNAME -p $PASSWORD --url YOUR_LESSON_URL
   ```
 
-- The script will start downloading the MP3 files into the local navigated folder.
+- The script will start downloading the MP3/MP4 files into the local navigated folder.
   Any possible errors would be printed out.
 
 - Output inside folder should look like this:

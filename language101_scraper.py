@@ -12,6 +12,31 @@ import requests
 from bs4 import BeautifulSoup
 
 
+def get_filename_body(lesson_soup):
+    """Generate main body of filename from page's title"""
+    filename_body = lesson_soup.title.text
+
+    # Sanitize filename.
+    # It avoids OSError: [Errno 22] while file writing
+    # and some potentially problematic characters in filenames
+    invalid_chars = '#%&\/?:*"<>{|}'
+    for char in invalid_chars:
+        filename_body = filename_body.replace(char, '')
+
+    return filename_body
+
+def save_file(file_url, file_name):
+    """Save file on local folder"""
+    try:
+        lesson_response = session.get(file_url)
+        with open(file_name, 'wb') as f:
+            f.write(lesson_response.content)
+            print(f'{file_name} saved on local device!')
+    except Exception as e:
+        print(e)
+        print(f'Failed to save {file_name} on local device.')
+        raise e
+
 parser = argparse.ArgumentParser(description='Scrape full language courses by Innovative Language.')
 parser.add_argument('-u', '--username', help='Username (email)')
 parser.add_argument('-p', '--password', help='Password for the course')
@@ -19,8 +44,7 @@ parser.add_argument('--url', help='URL for the first lesson of the course')
 
 args = parser.parse_args()
 
-
-USERNAME = args.username or input('Username(mail): ')
+USERNAME = args.username or input('Username (mail): ')
 PASSWORD = args.password or input('Password: ')
 COURSE_URL = args.url or input('Please insert first lesson URL of the desired course, for example:\n'
     ' * https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116\n'
@@ -77,12 +101,12 @@ with requests.Session() as session:
     for lesson_url in course_urls:
         lesson_source = session.get(lesson_url)
         lesson_soup = BeautifulSoup(lesson_source.text, 'lxml')
-        audio_soup = lesson_soup.find_all('audio')
 
+        audio_soup = lesson_soup.find_all('audio')
         # Downloads lesson audio files:
         if audio_soup:
             print(
-                f'Downloading Lesson {str(file_index).zfill(2)} - {lesson_soup.title.text}')
+                f'Downloading Lesson {str(file_index).zfill(2)} - {lesson_soup.title.text} audio')
             for audio_file in audio_soup:
                 try:
                     file_url = audio_file['data-trackurl']
@@ -101,21 +125,13 @@ with requests.Session() as session:
                 if file_url.endswith('.mp3'):
                     print(f'Successfully retrieved URL: {file_url}')
 
-                    # Creates a clean file name string with prefix, body and suffix of file name:
-                    
-                    # Numbering of file using the 'file_index' variable
+                    # Create a clean filename string with prefix, body, suffix and extension.
+                    # Files are numbered using the 'file_index' variable
                     file_prefix = str(file_index).zfill(2)
-
-                    # Main body of file name is taken from page's title
-                    file_body = lesson_soup.title.text
-                    # Avoids OSError: [Errno 22] while file writing:
-                    invalid_chars = '\/?:*"<>|'
-                    for char in invalid_chars:
-                        file_body = file_body.replace(char, "")
+                    file_body = get_filename_body(lesson_soup)
 
                     file_suffix = file_url.split('/')[-1]
-
-                    # Verifis clean version of file name by removing junk sufix string that may appear:
+                    # Verifies clean version of file name by removing junk suffix string that may appear:
                     if 'dialog' in file_suffix.lower() or 'dialogue' in file_suffix.lower():
                         file_suffix = 'Dialogue'
                     elif 'review' in file_suffix.lower():
@@ -123,20 +139,47 @@ with requests.Session() as session:
                     else:
                         file_suffix = 'Main Lesson'
 
-                    file_type = '.mp3'
+                    file_ext = file_url.split('.')[-1]
+                    file_name = f'{file_prefix} - {file_body} - {file_suffix}.{file_ext}'
 
-                    file_name = f'{file_prefix} - {file_body} - {file_suffix}{file_type}'
-
-                    # Saves file on local folder:
                     try:
-                        lesson_response = session.get(file_url)
-                        with open(file_name, 'wb') as f:
-                            f.write(lesson_response.content)
-                            print(f'{file_name} saved on local device!')
+                        save_file(file_url, file_name)
                     except Exception as e:
-                        print(e)
-                        print(f'Failed to save {file_name} on local device.')
                         continue
+
+        video_soup = lesson_soup.find_all('source')
+        # Downloads lesson video files:
+        if video_soup:
+            print(
+                f'Downloading Lesson {str(file_index).zfill(2)} - {lesson_soup.title.text} video')
+            for video_file in video_soup:
+                try:
+                    if video_file['type'] == 'video/mp4' and video_file['data-quality'] == 'h':
+                        file_url = video_file['src']
+                    else:
+                        continue
+                except Exception as e:
+                    print(e)
+                    print('Could not find out the URL for this lesson\'s video.')
+                    continue
+
+                # Verifies that the file is in 'mp4' or 'm4v' format.
+                # If so, builds a clean str name for the file:
+                if file_url.endswith('.mp4') or file_url.endswith('.m4v'):
+                    print(f'Successfully retrieved URL: {file_url}')
+
+                    # Create a clean file name string with prefix, body and extension.
+                    # Files are numbered using the 'file_index' variable
+                    file_prefix = str(file_index).zfill(2)
+                    file_body = get_filename_body(lesson_soup)
+                    file_ext = file_url.split('.')[-1]
+                    file_name = f'{file_prefix} - {file_body}.{file_ext}'
+
+                    try:
+                        save_file(file_url, file_name)
+                    except Exception as e:
+                        continue
+
             file_index += 1
 
 print('Yatta! Finished downloading the course~')
