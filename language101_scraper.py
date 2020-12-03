@@ -1,12 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # language101 scraper helps you scrape full language courses from sites like
 # japanesepod101.com, spanishpod101.com, chineseclass101.com and more!
 
 import argparse
-import requests
-from bs4 import BeautifulSoup
+
 from sys import exit
 from urllib.parse import urlparse
+
+import requests
+
+from bs4 import BeautifulSoup
+
 
 parser = argparse.ArgumentParser(description='Scrape full language courses by Innovative Language.')
 parser.add_argument('-u', '--username', help='Username (email)')
@@ -14,6 +18,7 @@ parser.add_argument('-p', '--password', help='Password for the course')
 parser.add_argument('--url', help='URL for the first lesson of the course')
 
 args = parser.parse_args()
+
 
 USERNAME = args.username or input('Username(mail): ')
 PASSWORD = args.password or input('Password: ')
@@ -26,8 +31,8 @@ LOGIN_DATA = {
     'amember_login': USERNAME,
     'amember_pass': PASSWORD,
 }
-o = urlparse(COURSE_URL)
-SOURCE_URL = f'{o.scheme}://{o.netloc}'
+obj = urlparse(COURSE_URL)
+SOURCE_URL = f'{obj.scheme}://{obj.netloc}'
 LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
 
 # Logins to the website:
