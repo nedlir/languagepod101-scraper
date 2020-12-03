@@ -1,10 +1,10 @@
-# :zap: languagepod101-scraper :zap:
-
-![Languages available](readme/language_selection.jpg)
-
-_languagepod101-scraper is a resource for dozens of language learning courses and study material for FREE._
-
----
+<h1 align="center">:zap: languagepod101-scraper	:zap:</h1>
+<p align="center">
+  <img src="readme\language_selection.jpg" alt="Language selection">
+  <br>
+  <i>languagepod101-scraper is a resource for dozen of language learning courses and study material for FREE.</i>
+</p>
+<hr>
 
 ## :mortar_board: About
 
