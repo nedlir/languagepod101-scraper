@@ -180,6 +180,19 @@ with requests.Session() as session:
                     except Exception as e:
                         continue
 
-            file_index += 1
+        # Beware: Access to PDFs requires Basic or Premium membership
+        pdf_links = lesson_soup.select('#pdfs a')
+        if pdf_links:
+            for pdf_link in pdf_links:
+                pdf_url = pdf_link.get('href')
+                if pdf_url.startswith('/pdfs/'):
+                    pdf_url = SOURCE_URL + pdf_url
+                pdf_name = pdf_url.split('/')[-1]
+                try:
+                    save_file(pdf_url, pdf_name)
+                except Exception:
+                    continue
+
+        file_index += 1
 
 print('Yatta! Finished downloading the course~')
