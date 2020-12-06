@@ -59,18 +59,23 @@ obj = urlparse(COURSE_URL)
 SOURCE_URL = f'{obj.scheme}://{obj.netloc}'
 LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
 
-# Logins to the website:
 print('Establishing a new session...')
 with requests.Session() as session:
+    # Logs in to the website
+    print(f'Trying to log in to {SOURCE_URL}')
+    response = session.post(LOGIN_URL, data=LOGIN_DATA)
+
     try:
-        print(f'Trying to login to {SOURCE_URL}')
-        course_response = session.post(LOGIN_URL, data=LOGIN_DATA)
-        print(f'Successfully logged in as {USERNAME}')
+        response.raise_for_status()
     except Exception as e:
         print(e)
-        print(
-            'Login Failed, please check urls input, login details and internet connection.')
+        print('Could not reach site. Please check URL and internet connection.')
         exit(1)
+
+    if 'X-Ill-Member' not in response.headers:
+        print('Could not log in. Please check your credentials.')
+        exit(1)
+    print(f'Successfully logged in as {USERNAME}')
 
     try:
         course_source = session.get(COURSE_URL)
