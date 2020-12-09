@@ -69,11 +69,11 @@ Japanese Pod 101 and all other sites have a similar structure which looks as fol
   ```
 
 - To download *Lower Beginner Season 1* we will have to use our web browser to navigate
-  to `lesson 1` of this course (any other lesson url from the **same course** is ok too...).
+  to this course.
 
-  Navigation would look like this: `Japanesepod101` → `Level 2 - Beginner` → `Lower Beginner Season 1` → `lesson 01`.
+  Navigation would look like this: `Japanesepod101` → `Level 2 - Beginner` → `Lower Beginner Season 1`.
   
-  Save the URL for `lesson 01` from the address bar, as you will have to provide it to the script later on.
+  Save the URL for the address bar, as you will have to provide it to the script later on.
 
 - Create a directory in your PC for this course, and enter into it.
 
@@ -82,8 +82,8 @@ Japanese Pod 101 and all other sites have a similar structure which looks as fol
 
   - the email you used to sign up for the course
   - your password for the course
-  - the course's lesson URL you have navigated through earlier
-    (something like `https://www.japanesepod101.com/lesson/pathway-lessons-117-course-introduction-level-2-japanese/?lp=442`).
+  - the pathway's URL you have navigated through earlier
+    (something like `https://www.japanesepod101.com/lesson-library/before-you-move-to-japan-lower-beginner/`).
 
 - Alternatively, you can pass the data as parameters when invoking the script:
 
