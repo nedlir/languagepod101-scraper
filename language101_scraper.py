@@ -4,6 +4,7 @@
 
 import argparse
 import json
+import os
 
 from sys import exit
 from urllib.parse import urlparse
@@ -166,34 +167,44 @@ def get_filename_body(lesson_soup):
     return filename_body
 
 
-def get_pathway_soup(pathway_url):
-    """Return the BeautifulSoup object for the given pathway URL"""
-    pathway = session.get(pathway_url)
+def get_soup(url):
+    """Return the BeautifulSoup object for the given URL"""
+    res = session.get(url)
     try:
-        pathway.raise_for_status()
+        res.raise_for_status()
     except Exception as e:
         print(e)
-        print('Could not download pathway. Please make sure the URL is accurate.')
+        print('Could not download web page. Please make sure the URL is accurate.')
         exit(1)
 
     try:
-        pathway_soup = BeautifulSoup(pathway.text, 'lxml')
+        soup = BeautifulSoup(res.text, 'lxml')
     except Exception as e:
         print(e)
-        print('Failed to parse the course\'s webpage, "lxml" package might be missing.')
+        print('Failed to parse the webpage, "lxml" package might be missing.')
         exit(1)
 
-    return pathway_soup
+    return soup
 
 
 def get_lessons_urls(pathway_url):
     """Return a list of the URLs of the lessons in the given pathway URL"""
     root_url, _ = parse_url(pathway_url)
-    pathway_soup = get_pathway_soup(pathway_url)
-    div = pathway_soup.select('#pw_page')[0]
+    pathway_soup = get_soup(pathway_url)
+    div = pathway_soup.select_one('#pw_page')
     entries = json.loads(div['data-collection-entries'])
     lessons_urls = [root_url + entry['url'] for entry in entries if entry.get('url')]
     return lessons_urls
+
+
+def get_pathways_urls(level_url):
+    """Return a lists of the URLs of the pathways in the given language level URL"""
+    root_url, _ = parse_url(level_url)
+    level_soup = get_soup(level_url)
+    level_name = level_url.split('/')[-1].replace('-', '')
+    pathways_links = level_soup.select(f'a[data-{level_name}="1"]')
+    pathways_urls = set([root_url + link['href'] for link in pathways_links])
+    return pathways_urls
 
 
 def download_pathway(pathway_url):
@@ -201,13 +212,27 @@ def download_pathway(pathway_url):
     root_url, _ = parse_url(pathway_url)
     lessons_urls = get_lessons_urls(pathway_url)
 
+    pathway_name = pathway_url.split('/')[-2]
+    os.mkdir(pathway_name)
+    os.chdir(pathway_name)
+
     for lesson_number, lesson_url in enumerate(lessons_urls, start=1):
-        lesson_source = session.get(lesson_url)
-        lesson_soup = BeautifulSoup(lesson_source.text, 'lxml')
+        lesson_soup = get_soup(lesson_url)
 
         download_audios(lesson_number, lesson_soup)
         download_videos(lesson_number, lesson_soup)
         download_pdfs(root_url, lesson_soup)
+    os.chdir('..')
+
+
+def download_level(level_url):
+    """Download all the pathways in the given language level URL"""
+    level_name = level_url.split('/')[-1]
+    os.mkdir(level_name)
+    os.chdir(level_name)
+    pathways_urls = get_pathways_urls(level_url)
+    for pathway_url in pathways_urls:
+        download_pathway(pathway_url)
 
 
 def save_file(file_url, file_name):
@@ -226,17 +251,18 @@ def save_file(file_url, file_name):
 def main(username, password, url):
     USERNAME = username or input('Username (mail): ')
     PASSWORD = password or input('Password: ')
-    pathway_url = url or input(
-        'Please enter URL of the pathway. For example:\n'
-        ' * https://www.japanesepod101.com/lesson-library/before-you-move-to-japan-lower-beginner/\n'
-        ' * https://www.spanishpod101.com/lesson-library/level-1-spanish/\n'
-        ' * https://www.chineseclass101.com/lesson-library/level-1-chinese/\n'
+    level_url = url or input(
+        'Please enter URL of the study level for the desired language. For example:\n'
+        ' * https://www.japanesepod101.com/lesson-library/absolute-beginner\n'
+        ' * https://www.spanishpod101.com/lesson-library/intermediate\n'
+        ' * https://www.chineseclass101.com/lesson-library/advanced\n'
     )
 
-    authenticate(pathway_url, USERNAME, PASSWORD)
-    download_pathway(pathway_url)
+    authenticate(level_url, USERNAME, PASSWORD)
 
-    print('Yatta! Finished downloading the pathway!')
+    download_level(level_url)
+
+    print('Yatta! Finished downloading the level!')
 
 
 if __name__ == '__main__':
@@ -245,7 +271,7 @@ if __name__ == '__main__':
     )
     parser.add_argument('-u', '--username', help='Username (email)')
     parser.add_argument('-p', '--password', help='Password for the course')
-    parser.add_argument('--url', help='URL for the pathway to download')
+    parser.add_argument('--url', help='URL for the language level to download')
 
     args = parser.parse_args()
     main(args.username, args.password, args.url)
