@@ -217,8 +217,8 @@ def download_pathway(pathway_url):
     os.chdir(pathway_name)
 
     for lesson_number, lesson_url in enumerate(lessons_urls, start=1):
+        save_file(lesson_url, f'{lesson_number}.html')
         lesson_soup = get_soup(lesson_url)
-
         download_audios(lesson_number, lesson_soup)
         download_videos(lesson_number, lesson_soup)
         download_pdfs(root_url, lesson_soup)
