@@ -92,10 +92,7 @@ def download_audios(lesson_number, lesson_soup):
                 file_ext = file_url.split('.')[-1]
                 file_name = f'{file_prefix} - {file_body} - {file_suffix}.{file_ext}'
 
-                try:
-                    save_file(file_url, file_name)
-                except Exception as e:
-                    continue
+                save_file(file_url, file_name)
 
 
 def download_pdfs(root_url, lesson_soup):
@@ -108,10 +105,7 @@ def download_pdfs(root_url, lesson_soup):
             if pdf_url.startswith('/pdfs/'):
                 pdf_url = root_url + pdf_url
             pdf_name = pdf_url.split('/')[-1]
-            try:
-                save_file(pdf_url, pdf_name)
-            except Exception:
-                continue
+            save_file(pdf_url, pdf_name)
 
 
 def download_videos(lesson_number, lesson_soup):
@@ -148,10 +142,7 @@ def download_videos(lesson_number, lesson_soup):
                 file_ext = file_url.split('.')[-1]
                 file_name = f'{file_prefix} - {file_body}.{file_ext}'
 
-                try:
-                    save_file(file_url, file_name)
-                except Exception as e:
-                    continue
+                save_file(file_url, file_name)
 
 
 def get_filename_body(lesson_soup):
@@ -213,7 +204,8 @@ def download_pathway(pathway_url):
     lessons_urls = get_lessons_urls(pathway_url)
 
     pathway_name = pathway_url.split('/')[-2]
-    os.mkdir(pathway_name)
+    if not os.path.isdir(pathway_name):
+        os.mkdir(pathway_name)
     os.chdir(pathway_name)
 
     for lesson_number, lesson_url in enumerate(lessons_urls, start=1):
@@ -233,7 +225,8 @@ def download_level(level_url):
         Eg: https://www.japanesepod101.com/lesson-library/absolute-beginner''')
         exit(1)
     level_name = url_parts[-1]
-    os.mkdir(level_name)
+    if not os.path.isdir(level_name):
+        os.mkdir(level_name)
     os.chdir(level_name)
     pathways_urls = get_pathways_urls(level_url)
     for pathway_url in pathways_urls:
@@ -242,6 +235,10 @@ def download_level(level_url):
 
 def save_file(file_url, file_name):
     """Save file on local folder"""
+    if os.path.isfile(file_name):
+        print(f'{file_name} was already downloaded.')
+        return
+
     try:
         lesson_response = session.get(file_url)
         with open(file_name, 'wb') as f:
@@ -250,7 +247,6 @@ def save_file(file_url, file_name):
     except Exception as e:
         print(e)
         print(f'Failed to save {file_name} on local device.')
-        raise e
 
 
 def main(username, password, url):
