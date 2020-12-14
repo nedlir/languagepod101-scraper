@@ -227,7 +227,12 @@ def download_pathway(pathway_url):
 
 def download_level(level_url):
     """Download all the pathways in the given language level URL"""
-    level_name = level_url.split('/')[-1]
+    url_parts = level_url.split('/')
+    if 'lesson-library' not in url_parts:
+        print('''You should provide the URL for a language level, not a lesson.
+        Eg: https://www.japanesepod101.com/lesson-library/absolute-beginner''')
+        exit(1)
+    level_name = url_parts[-1]
     os.mkdir(level_name)
     os.chdir(level_name)
     pathways_urls = get_pathways_urls(level_url)
