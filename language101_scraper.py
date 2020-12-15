@@ -151,7 +151,7 @@ def get_filename_body(lesson_soup):
 
     # Sanitize filename. It avoids `OSError: [Errno 22]` while file writing
     # and some potentially problematic characters in filenames
-    invalid_chars = '#%&\/?:*"<>{|}'
+    invalid_chars = '#%&\/?:*"<>{|}\t'
     for char in invalid_chars:
         filename_body = filename_body.replace(char, '')
 
