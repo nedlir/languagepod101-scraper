@@ -1,0 +1,5 @@
+Authors
+==========
+- nedlir
+- quique
+- airmack
