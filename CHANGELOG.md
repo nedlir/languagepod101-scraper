@@ -8,6 +8,6 @@ Version 0.2
 -added store for cookies
 -added differentiation for downloading videos/audio/pdfs
 
-Version 0.2
+Version 0.3
 ===========
--extract vocabulary for japanese
+-extract vocabulary for japanese and create anki decks

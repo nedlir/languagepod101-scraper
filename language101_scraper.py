@@ -19,13 +19,14 @@ from urllib.parse import urlparse
 import requests
 
 from bs4 import BeautifulSoup
+import anki_export
 
 MAJOR_VERSION=0
-MINOR_VERSION=2
+MINOR_VERSION=3
 PATCH_LEVEL=0
 
 VERSION_STRING = str(MAJOR_VERSION) + "."+ str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
-
+__version__ = VERSION_STRING
 
 class LanguagePod101Downloader:
     """Wrapper class for storing states e.g. arguments or config states"""
@@ -36,6 +37,7 @@ class LanguagePod101Downloader:
         self.m_download_audio = self.m_arguments["audio"]
         self.m_download_pdf = self.m_arguments["document"]
         self.m_download_all_videos = self.m_arguments["download_all_videos"]
+        self.m_download_vocabulary = self.m_arguments["anki_deck"]
 
     def parse_url(self, url):
         """Parse the course URL"""
@@ -155,18 +157,21 @@ class LanguagePod101Downloader:
                     self.save_file(file_url, file_name)
 
     def download_vocabulary(self, root_url, lesson_soup):
-        """Download the vocabulary"""
-        japanese_kana = []
-        japanese_pronaunciation = []
-        english_definition = []
-        for i in lesson_soup.find_all("span",  {"lang":"ja", "class":None}):
-            japanese_kana.append(i.get_text().strip())
-        for i in lesson_soup.find_all("span",  {"lang":"ja", "class":"lsn3-lesson-vocabulary__pronunciation"}):
-            japanese_pronaunciation.append(i.get_text().strip()[1:-1].strip()) # needs a double strip as the[1:-1] might lead to a leading/trailing whitespace
-        for i in lesson_soup.find_all("span",  {"class":"lsn3-lesson-vocabulary__definition", "dir":"ltr"}):
-            if i.find_parent("span", {"class":"lsn3-lesson-vocabulary__sample js-lsn3-vocabulary-examples"}): # we ignore sample sentences
-                continue
-            english_definition.append (i.get_text().strip())
+        """Download the vocabulary, currently only japanese is supported. This should be extended """
+        voc_scraper = anki_export.Language()
+        downloadList = []
+        if root_url.lower().find("japanese") != -1:
+            voc_scraper = anki_export.Japanese()
+            downloadList = voc_scraper.Scraper(root_url, lesson_soup)
+        else:
+            print("Unknown language")
+
+        for i in downloadList:
+            name = i.split('/')[-1]
+            self.save_file(i, name)
+        voc_scraper.CreateDeck(lesson_soup.title.text)
+
+
 
     def download_pdfs(self, root_url, lesson_soup):
         """Download the PDF files of a lesson"""
@@ -288,6 +293,8 @@ class LanguagePod101Downloader:
                 self.download_videos(lesson_number, lesson_soup)
             if self.m_download_pdf:
                 self.download_pdfs(root_url, lesson_soup)
+            if self.m_download_vocabulary:
+                self.download_vocabulary(root_url, lesson_soup)
         os.chdir('..')
 
 
@@ -350,7 +357,7 @@ def check_all_arguments_empty(args):
 def get_input_arguments():
     """Get the behavior either via the arguments or via a config file"""
     parser = argparse.ArgumentParser(
-        description='Scrape full language courses by Innovative Language.Version = ' + VERSION_STRING
+        description='Scrape full language courses by Innovative Language.Version = ' + __version__
     )
     parser.add_argument('-u', '--username', help='Username (email)')
     parser.add_argument('-p', '--password', help='Password for the course')
@@ -359,6 +366,7 @@ def get_input_arguments():
     parser.add_argument('-d', '--document', default=True, type=bool, help='Download documents e.g. pdfs')
     parser.add_argument('--url', help='URL for the language level to download')
     parser.add_argument('-c', '--config', help='Provide config file for input')
+    parser.add_argument('--anki_deck', default=False, help='Create anki decks from vocabulary')
     parser.add_argument('--download_all_videos', default=False, type=bool, help='Downloads all videos independent of quality')
     args = parser.parse_args()
     vargs = vars(args)
