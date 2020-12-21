@@ -29,17 +29,13 @@ VERSION_STRING = str(MAJOR_VERSION) + "."+ str(MINOR_VERSION) + "." + str(PATCH_
 
 class LanguagePod101Downloader:
     """Wrapper class for storing states e.g. arguments or config states"""
-    m_arguments = None
-    m_download_video = None
-    m_download_audio = None
-    m_download_pdf = None
-    m_session = None
 
     def __init__(self, args):
         self.m_arguments = vars(args)
         self.m_download_video = self.m_arguments["video"]
         self.m_download_audio = self.m_arguments["audio"]
         self.m_download_pdf = self.m_arguments["document"]
+        self.m_download_all_videos = self.m_arguments["download_all_videos"]
 
     def parse_url(self, url):
         """Parse the course URL"""
@@ -158,6 +154,19 @@ class LanguagePod101Downloader:
 
                     self.save_file(file_url, file_name)
 
+    def download_vocabulary(self, root_url, lesson_soup):
+        """Download the vocabulary"""
+        japanese_kana = []
+        japanese_pronaunciation = []
+        english_definition = []
+        for i in lesson_soup.find_all("span",  {"lang":"ja", "class":None}):
+            japanese_kana.append(i.get_text().strip())
+        for i in lesson_soup.find_all("span",  {"lang":"ja", "class":"lsn3-lesson-vocabulary__pronunciation"}):
+            japanese_pronaunciation.append(i.get_text().strip()[1:-1].strip()) # needs a double strip as the[1:-1] might lead to a leading/trailing whitespace
+        for i in lesson_soup.find_all("span",  {"class":"lsn3-lesson-vocabulary__definition", "dir":"ltr"}):
+            if i.find_parent("span", {"class":"lsn3-lesson-vocabulary__sample js-lsn3-vocabulary-examples"}): # we ignore sample sentences
+                continue
+            english_definition.append (i.get_text().strip())
 
     def download_pdfs(self, root_url, lesson_soup):
         """Download the PDF files of a lesson"""
@@ -182,11 +191,9 @@ class LanguagePod101Downloader:
             )
             for video_file in video_soup:
                 try:
-                    if (
-                        video_file['type'] == 'video/mp4'
-                        #and video_file['data-quality'] == 'h'
-                    ):
-                        file_url = video_file['src']
+                    if video_file['type'] == 'video/mp4':
+                        if self.m_download_all_videos or video_file['data-quality'] == 'h' or video_file['data-quality'] == 'm':
+                            file_url = video_file['src']
                     else:
                         continue
                 except Exception as e:
@@ -273,8 +280,8 @@ class LanguagePod101Downloader:
         os.chdir(pathway_name)
 
         for lesson_number, lesson_url in enumerate(lessons_urls, start=1):
-            self.save_file(lesson_url, f'{lesson_number}.html')
             lesson_soup = self.get_soup(lesson_url)
+            self.save_file(lesson_url, f'{str(lesson_number).zfill(2)} - {lesson_soup.title.text}.html')
             if self.m_download_audio:
                 self.download_audios(lesson_number, lesson_soup)
             if self.m_download_video:
@@ -352,6 +359,7 @@ def get_input_arguments():
     parser.add_argument('-d', '--document', default=True, type=bool, help='Download documents e.g. pdfs')
     parser.add_argument('--url', help='URL for the language level to download')
     parser.add_argument('-c', '--config', help='Provide config file for input')
+    parser.add_argument('--download_all_videos', default=False, type=bool, help='Downloads all videos independent of quality')
     args = parser.parse_args()
     vargs = vars(args)
     if args.config is not None:

@@ -7,3 +7,7 @@ Version 0.2
 ===========
 -added store for cookies
 -added differentiation for downloading videos/audio/pdfs
+
+Version 0.2
+===========
+-extract vocabulary for japanese
