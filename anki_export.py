@@ -6,6 +6,7 @@ import genanki
 from genanki.model import Model
 
 import time
+import logging
 
 BASIC_AND_REVERSED_CARD_JP_MODEL = Model(
   12938895,
@@ -95,5 +96,6 @@ class Japanese(Language):
             deck.add_note(genanki.Note(BASIC_AND_REVERSED_CARD_JP_MODEL, [self.japanese_pronaunciation[i], self.english_definition[i], self.japanese_kana[i], self.japanese_audio[i] ]))
         my_package = genanki.Package(deck)
         my_package.media_files = self.audio_files
-        my_package.write_to_file("".join(title.split()) +".apkg", timestamp=time.time())
-        print ("Created+ ".join(title.split())+ ".apkg")
+        local_file = "".join(title.split()) +".apkg"
+        my_package.write_to_file(local_file, timestamp=time.time())
+        logging.info("Created " + local_file)

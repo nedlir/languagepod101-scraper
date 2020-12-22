@@ -9,6 +9,8 @@ from os import path
 
 from getpass import getpass
 import pickle
+import random
+import time
 
 import json
 import os
@@ -21,23 +23,62 @@ import requests
 from bs4 import BeautifulSoup
 import anki_export
 
+import logging
+
 MAJOR_VERSION=0
-MINOR_VERSION=3
+MINOR_VERSION=4
 PATCH_LEVEL=0
 
 VERSION_STRING = str(MAJOR_VERSION) + "."+ str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
 __version__ = VERSION_STRING
+
+FAKE_BROWSER_HEADERS = {
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
+    "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.366",
+    "accept-language":"en-US,en;q=0.9,ja;q=0.8",
+    "cache-control":"no-cache",
+    "pragma":"no-cache",
+    "sec-fetch-mode":
+    "navigate",
+    "sec-fetch-site":"none",
+    "sec-fetch-user":"?1",
+    "upgrade-insecure-requests":"1"
+}
 
 class LanguagePod101Downloader:
     """Wrapper class for storing states e.g. arguments or config states"""
 
     def __init__(self, args):
         self.m_arguments = vars(args)
-        self.m_download_video = self.m_arguments["video"]
-        self.m_download_audio = self.m_arguments["audio"]
-        self.m_download_pdf = self.m_arguments["document"]
-        self.m_download_all_videos = self.m_arguments["download_all_videos"]
-        self.m_download_vocabulary = self.m_arguments["anki_deck"]
+        self.sanity_check()
+
+    def sanity_check(self):
+        boolean_values = ["video", "audio", "document", "anki_deck"]
+        for i in ["video", "audio", "document", "anki_deck"]:
+            if type(self.m_arguments.get(i)) is not bool:
+                self.m_arguments[i] = self.m_arguments.get(i).lower() in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh'] #convert to bool
+
+        for i in ["min_delay", "max_delay"]:
+            if type(self.m_arguments.get(i)) is str:
+                self.m_arguments[i] = int(self.m_arguments.get(i))
+
+        minD = self.m_arguments.get("min_delay")
+        maxD = self.m_arguments.get("max_delay")
+        ## check if min and max value are really min and max
+        if type (minD) is int and type (maxD) is int:
+            #Do the old switcheroo if necessary and bind to a minimum of zero
+            self.m_arguments["min_delay"] = max(0,min(minD, maxD))
+            self.m_arguments["max_delay"] = max(0,max(minD, maxD))
+            if self.m_arguments["min_delay"] != minD or self.m_arguments.get("max_delay") != maxD:
+                logging.warning( "Delay is not correctly set. New delay is: ")
+                logging.warning( "min:" + str(self.m_arguments["min_delay"]) )
+                logging.warning( "max:" + str(self.m_arguments["max_delay"]) )
+
+        debugConfigWithoutPassword = self.m_arguments
+        debugConfigWithoutPassword["password"] = "*******" ## no need for blasting out the password in a log
+        logging.debug(debugConfigWithoutPassword)
+
+
 
     def parse_url(self, url):
         """Parse the course URL"""
@@ -65,8 +106,8 @@ class LanguagePod101Downloader:
                 content = pickle.load(f)
                 return content
             except Exception as e:
-                print(e)
-                print("Restoring from cookie failed")
+                logging.error(e)
+                logging.error("Restoring from cookie failed")
         return None
 
     def check_if_authenticated(self, response):
@@ -74,8 +115,8 @@ class LanguagePod101Downloader:
         try:
             response.raise_for_status()
         except Exception as e:
-            print(e)
-            print('Could not reach site. Please check URL and internet connection.')
+            logging.error(e)
+            logging.error('Could not reach site. Please check URL and internet connection.')
             exit(1)
 
         if 'X-Ill-Member' not in response.headers:
@@ -87,16 +128,17 @@ class LanguagePod101Downloader:
         """Logs in to the website via an old session or a new one"""
         root_url, login_url = self.parse_url(url)
 
-        print(f'Trying to log in to {root_url}')
+        logging.debug(f'Trying to log in to {root_url}')
         self.m_session = requests.Session()
         cachedSession= False
         loadCookie = self.load_cookie()
+        self.m_session.headers.update(FAKE_BROWSER_HEADERS)
 
         if loadCookie is not None:
             self.m_session.cookies.update(loadCookie)
             response = self.m_session.post(login_url)
             if self.check_if_authenticated(response):
-                print('Sucessfully logged in via old session.')
+                logging.info('Sucessfully logged in via old session.')
                 cachedSession= True
                 return
         if not cachedSession:
@@ -104,10 +146,11 @@ class LanguagePod101Downloader:
             response = self.m_session.post(login_url, data=credentials)
             self.place_cookie(self.m_session.cookies.get_dict())
             if self.check_if_authenticated(response):
-                print('Sucessfully logged in with new  session.')
+                logging.info('Sucessfully logged in with new session.')
                 return
         if not self.check_if_authenticated(response):
-            print('Could not log in. Please check your credentials.')
+            logging.error('Could not log in. Please check your credentials.')
+            exit(1)
 
 
     def download_audios(self, lesson_number, lesson_soup):
@@ -115,27 +158,23 @@ class LanguagePod101Downloader:
         audio_soup = lesson_soup.find_all('audio')
 
         if audio_soup:
-            print(
-                f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} audio'
-            )
+            logging.info(f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} audio')
             for audio_file in audio_soup:
                 try:
                     file_url = audio_file['data-trackurl']
                 except Exception as e:
-                    print(e)
-                    print(
-                        'Tag "data-trackurl" was not found, trying to reach "data-url" tag instead'
-                    )
+                    logging.debug(e)
+                    logging.debug('Tag "data-trackurl" was not found, trying to reach "data-url" tag instead')
                     try:
                         file_url = audio_file['data-url']
                     except Exception as e:
-                        print(e)
-                        print(f'Could not retrieve URL: {file_url}')
+                        logging.error(e)
+                        logging.error(f'Could not retrieve URL: {file_url}')
                         continue
 
                 # Verifies that the file is 'mp3' format, if so, builds a clean str name for the file:
                 if file_url.endswith('.mp3'):
-                    print(f'Successfully retrieved URL: {file_url}')
+                    logging.debug(f'Successfully retrieved URL: {file_url}')
 
                     # Create a clean filename string with prefix, body, suffix and extension.
                     # Files are numbered using the 'lesson_number' variable
@@ -164,7 +203,7 @@ class LanguagePod101Downloader:
             voc_scraper = anki_export.Japanese()
             downloadList = voc_scraper.Scraper(root_url, lesson_soup)
         else:
-            print("Unknown language")
+            logging.warning("Unknown language")
 
         for i in downloadList:
             name = i.split('/')[-1]
@@ -191,25 +230,23 @@ class LanguagePod101Downloader:
         video_soup = lesson_soup.find_all('source')
 
         if video_soup:
-            print(
-                f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} video'
-            )
+            logging.info(f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} video')
             for video_file in video_soup:
                 try:
                     if video_file['type'] == 'video/mp4':
-                        if self.m_download_all_videos or video_file['data-quality'] == 'h' or video_file['data-quality'] == 'm':
+                        if self.m_arguments["download_all_videos"] or video_file['data-quality'] == 'h' or video_file['data-quality'] == 'm':
                             file_url = video_file['src']
                     else:
                         continue
                 except Exception as e:
-                    print(e)
-                    print('Could not find out the URL for this lesson\'s video.')
+                    logging.warning(e)
+                    logging.warning('Could not find out the URL for this lesson\'s video.')
                     continue
 
                 # Verifies that the file is in 'mp4' or 'm4v' format.
                 # If so, builds a clean str name for the file:
                 if file_url.endswith('.mp4') or file_url.endswith('.m4v'):
-                    print(f'Successfully retrieved URL: {file_url}')
+                    logging.debug(f'Successfully retrieved URL: {file_url}')
 
                     # Create a clean file name string with prefix, body and extension.
                     # Files are numbered using the 'lesson_number' variable
@@ -240,15 +277,15 @@ class LanguagePod101Downloader:
         try:
             res.raise_for_status()
         except Exception as e:
-            print(e)
-            print('Could not download web page. Please make sure the URL is accurate.')
+            logging.error(e)
+            logging.error('Could not download web page. Please make sure the URL is accurate.')
             exit(1)
 
         try:
             soup = BeautifulSoup(res.text, 'lxml')
         except Exception as e:
-            print(e)
-            print('Failed to parse the webpage, "lxml" package might be missing.')
+            logging.error(e)
+            logging.error('Failed to parse the webpage, "lxml" package might be missing.')
             exit(1)
 
         return soup
@@ -287,14 +324,18 @@ class LanguagePod101Downloader:
         for lesson_number, lesson_url in enumerate(lessons_urls, start=1):
             lesson_soup = self.get_soup(lesson_url)
             self.save_file(lesson_url, f'{str(lesson_number).zfill(2)} - {lesson_soup.title.text}.html')
-            if self.m_download_audio:
+            if self.m_arguments.get("audio"):
                 self.download_audios(lesson_number, lesson_soup)
-            if self.m_download_video:
+            if self.m_arguments.get("video"):
                 self.download_videos(lesson_number, lesson_soup)
-            if self.m_download_pdf:
+            if self.m_arguments.get("document"):
                 self.download_pdfs(root_url, lesson_soup)
-            if self.m_download_vocabulary:
+            if self.m_arguments.get("anki_deck"):
                 self.download_vocabulary(root_url, lesson_soup)
+            if self.m_arguments.get("min_delay") and self.m_arguments.get("max_delay"):
+                delay = random.randrange(self.m_arguments["min_delay"],self.m_arguments["max_delay"])
+                logging.debug("Sleeping for "+ str(delay) + " seconds")
+                time.sleep(delay)
         os.chdir('..')
 
 
@@ -302,8 +343,9 @@ class LanguagePod101Downloader:
         """Download all the pathways in the given language level URL"""
         url_parts = level_url.split('/')
         if 'lesson-library' not in url_parts:
-            print('''You should provide the URL for a language level, not a lesson.
-            Eg: https://www.japanesepod101.com/lesson-library/absolute-beginner''')
+            e = '''You should provide the URL for a language level, not a lesson.
+            Eg: https://www.japanesepod101.com/lesson-library/absolute-beginner'''
+            logging.error(e)
             exit(1)
         level_name = url_parts[-1]
         if not os.path.isdir(level_name):
@@ -317,17 +359,17 @@ class LanguagePod101Downloader:
     def save_file(self, file_url, file_name):
         """Save file on local folder"""
         if os.path.isfile(file_name):
-            print(f'{file_name} was already downloaded.')
+            logging.debug(f'{file_name} was already downloaded.')
             return
 
         try:
             lesson_response = self.m_session.get(file_url)
             with open(file_name, 'wb') as f:
                 f.write(lesson_response.content)
-                print(f'{file_name} saved on local device!')
+                logging.debug(f'{file_name} saved on local device!')
         except Exception as e:
-            print(e)
-            print(f'Failed to save {file_name} on local device.')
+            logging.warning(e)
+            logging.warning(f'Failed to save {file_name} on local device.')
 
 
 def main(username, password, url, args):
@@ -343,8 +385,7 @@ def main(username, password, url, args):
     lpd.authenticate(level_url, USERNAME, PASSWORD)
 
     lpd.download_level(level_url)
-
-    print('Yatta! Finished downloading the level!')
+    logging.info('Yatta! Finished downloading the level!')
 
 def check_all_arguments_empty(args):
     """This functions checks if all arguments e.g. provided by sys.arg"""
@@ -371,35 +412,49 @@ def get_input_arguments():
     args = parser.parse_args()
     vargs = vars(args)
     if args.config is not None:
-        print ("reading config")
+        logging.info("reading config")
         config = configparser.ConfigParser()
         try:
             config.read(args.config)
         except Exception as e:
-            print(e)
-            print(f'Failed to load config file: ' + args.config)
+            logging.error(e)
+            logging.error(f'Failed to load config file: ' + args.config)
             exit(1)
         for key,content in config['User'].items():
             vargs[key] = content
 
     elif check_all_arguments_empty(args):
-        print ("Trying to use default config file")
+        logging.debug("Trying to use default config file")
         configpath = expanduser("~") + "/.config/languagepod101/lp101.config"
-        print ( configpath )
         config = configparser.ConfigParser()
         if path.exists(configpath):
             try:
                 config.read(configpath)
             except Exception as e:
-                print(e)
-                print(f'Failed to load standard config file: ' + config)
+                logging.warning(e)
+                logging.warning(f'Failed to load standard config file: ' + config)
             for key,content in config['User'].items():
                 vargs[key] = content
         else:
-            print("Couldn't find default config file")
-
+            logging.warning("Couldn't find default config file")
     return args
 
+def setupLoging():
+    logingpath = expanduser("~") + "/.local/share/languagepod101/"
+    if not path.exists(logingpath):
+        os.mkdir(logingpath)
+    logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                    datefmt='%m-%d %H:%M',
+                    filename=logingpath + "lp101.log",
+                    filemode='w')
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    console.setFormatter(formatter)
+    logging.getLogger('').addHandler(console)
+
 if __name__ == '__main__':
+    setupLoging()
     args = get_input_arguments()
     main(args.username, args.password, args.url, args)
