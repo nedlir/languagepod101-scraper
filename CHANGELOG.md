@@ -18,3 +18,8 @@ Version 0.4
 - added "trustworthy" user-agent
 - randomize delay while scraping. To not cause too much stress on the server side
 - fixed issue with incorrectly handling config settings
+
+Version 0.5
+===========
+- continue download from last successful downloaded lesson
+- supports behavior for downloading levels and former lessons only

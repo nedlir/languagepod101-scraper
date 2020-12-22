@@ -26,7 +26,7 @@ import anki_export
 import logging
 
 MAJOR_VERSION=0
-MINOR_VERSION=4
+MINOR_VERSION=5
 PATCH_LEVEL=0
 
 VERSION_STRING = str(MAJOR_VERSION) + "."+ str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
@@ -75,10 +75,8 @@ class LanguagePod101Downloader:
                 logging.warning( "max:" + str(self.m_arguments["max_delay"]) )
 
         debugConfigWithoutPassword = self.m_arguments
-        debugConfigWithoutPassword["password"] = "*******" ## no need for blasting out the password in a log
+        debugConfigWithoutPassword["password"] = 8 * "*" ## no need for blasting out the password in a log
         logging.debug(debugConfigWithoutPassword)
-
-
 
     def parse_url(self, url):
         """Parse the course URL"""
@@ -313,36 +311,22 @@ class LanguagePod101Downloader:
 
     def download_pathway(self, pathway_url):
         """Download the lessons in the given pathway URL"""
-        root_url, _ = self.parse_url(pathway_url)
         lessons_urls = self.get_lessons_urls(pathway_url)
 
         pathway_name = pathway_url.split('/')[-2]
         if not os.path.isdir(pathway_name):
             os.mkdir(pathway_name)
-        os.chdir(pathway_name)
 
-        for lesson_number, lesson_url in enumerate(lessons_urls, start=1):
-            lesson_soup = self.get_soup(lesson_url)
-            self.save_file(lesson_url, f'{str(lesson_number).zfill(2)} - {lesson_soup.title.text}.html')
-            if self.m_arguments.get("audio"):
-                self.download_audios(lesson_number, lesson_soup)
-            if self.m_arguments.get("video"):
-                self.download_videos(lesson_number, lesson_soup)
-            if self.m_arguments.get("document"):
-                self.download_pdfs(root_url, lesson_soup)
-            if self.m_arguments.get("anki_deck"):
-                self.download_vocabulary(root_url, lesson_soup)
-            if self.m_arguments.get("min_delay") and self.m_arguments.get("max_delay"):
-                delay = random.randrange(self.m_arguments["min_delay"],self.m_arguments["max_delay"])
-                logging.debug("Sleeping for "+ str(delay) + " seconds")
-                time.sleep(delay)
-        os.chdir('..')
+        return [pathway_name, lessons_urls]
 
+    def check_for_lessons_library(self, level_url):
+        return 'lesson-library' not in level_url
 
     def download_level(self, level_url):
         """Download all the pathways in the given language level URL"""
+        ## This option is unfeasable for use as a standard behavior even with restoring the last download state
         url_parts = level_url.split('/')
-        if 'lesson-library' not in url_parts:
+        if check_for_lessons_library(self, level_url):
             e = '''You should provide the URL for a language level, not a lesson.
             Eg: https://www.japanesepod101.com/lesson-library/absolute-beginner'''
             logging.error(e)
@@ -350,11 +334,77 @@ class LanguagePod101Downloader:
         level_name = url_parts[-1]
         if not os.path.isdir(level_name):
             os.mkdir(level_name)
-        os.chdir(level_name)
         pathways_urls = self.get_pathways_urls(level_url)
-        for pathway_url in pathways_urls:
-            self.download_pathway(pathway_url)
+        return [level_name, pathways_urls]
 
+    def create_stack_for_level(self, level_url):
+        stack = dict()
+        [level_name, pathways_urls] = self.download_level(level_url)
+        logging.info(pathways_url)
+        stack["version"] = __version__
+        stack["lesson"] = dict()
+        stack["start_url"] = level_url
+        for i in pathways_url:
+            [pathway_name, lessons] = self.download_pathway(i)
+            logging.info(lessons)
+            for j in lessons:
+                stack["lesson"][j] = [level_name + pathway_name,False]
+        self.save_download_stack(stack)
+        return stack
+
+    def create_stack_for_lesson(self, level_url):
+        stack = dict()
+        logging.info(level_url)
+        stack["version"] = __version__
+        stack["lesson"] = dict()
+        stack["start_url"] = level_url
+        [pathway_name, lessons] = self.download_pathway(level_url)
+        logging.info(lessons)
+        for j in lessons:
+            stack["lesson"][j] = [pathway_name, False]
+        self.save_download_stack(stack)
+        return stack
+
+    def create_download_stack(self, level_url):
+        if self.check_for_lessons_library( level_url):
+            return self.create_stack_for_level( level_url)
+        else:
+            return self.create_stack_for_lesson( level_url)
+
+    def save_download_stack(self, stack):
+        stackpath = expanduser("~") + "/.config/languagepod101/"
+        stack_file = "laststack"
+        if not path.exists(stackpath):
+            mkdir(stackpath)
+        with open(stackpath + stack_file, 'wb') as f:
+            pickle.dump(stack, f)
+        logging.info("Download stack stored")
+
+    def load_download_stack(self):
+        stackpath = expanduser("~") + "/.config/languagepod101/"
+        stack_file = "laststack"
+
+        try:
+            with open(stackpath + stack_file, 'rb') as f:
+                try:
+                    stack = pickle.load(f)
+                    if stack["version"] != __version__:
+                        logging.warning("Attention trying to use an old download stack with a newer version, this might cause undefined behavior. If you are unsure create a backup and continue with YES.")
+                        if input("Please confirm with YES (all capital) to continue. No further warning will happen:\r\n") != "YES":
+                            exit(1)
+                        logging.info("Rewriting version of download stack")
+                        stack["version"] = __version__
+                        self.save_download_stack(stack)
+                    logging.info("Download stack restored")
+                    return stack
+                except Exception as e:
+                    logging.error(e)
+                    logging.error("Restoring download stack failed")
+            return None
+        except Exception as e:
+            logging.debug(e)
+            logging.debug("No download stack found")
+        return None
 
     def save_file(self, file_url, file_name):
         """Save file on local folder"""
@@ -371,6 +421,49 @@ class LanguagePod101Downloader:
             logging.warning(e)
             logging.warning(f'Failed to save {file_name} on local device.')
 
+    def work_on_stack(self, stack):
+        ##stack
+        # key lessonurl:  path, Done?
+        lessons_counter = dict()
+        old_cwd = os.getcwd()
+        for sublesson in stack["lesson"]:
+
+            lesson_url = sublesson
+            path       = stack["lesson"][sublesson][0]
+            isFinished = stack["lesson"][sublesson][-1]
+            if lessons_counter.get(path) is None:
+                lessons_counter[path] = 0
+            lessons_counter[path] += 1
+            if isFinished == True:
+                logging.debug("Skipping Lesson" + str(lessons_counter[path]))
+                continue
+
+            lesson_number = lessons_counter[path]
+            os.chdir(path)
+
+            root_url, _ = self.parse_url(lesson_url)
+            lesson_soup = self.get_soup(lesson_url)
+            self.save_file(lesson_url, f'{str(lesson_number).zfill(2)} - {lesson_soup.title.text}.html')
+            if self.m_arguments.get("audio"):
+                self.download_audios(lesson_number, lesson_soup)
+            if self.m_arguments.get("video"):
+                self.download_videos(lesson_number, lesson_soup)
+            if self.m_arguments.get("document"):
+                self.download_pdfs(root_url, lesson_soup)
+            if self.m_arguments.get("anki_deck"):
+                self.download_vocabulary(root_url, lesson_soup)
+
+            stack["lesson"][sublesson][-1] = True
+            self.save_download_stack(stack)
+
+            if self.m_arguments.get("min_delay") and self.m_arguments.get("max_delay"):
+                delay = random.randrange(self.m_arguments["min_delay"],self.m_arguments["max_delay"])
+                logging.debug("Sleeping for "+ str(delay) + " seconds")
+                time.sleep(delay)
+            os.chdir(old_cwd)
+        ## empty stack and save
+        stack = None
+        save_download_stack(stack)
 
 def main(username, password, url, args):
     USERNAME = username or input('Username (mail): ')
@@ -384,7 +477,11 @@ def main(username, password, url, args):
     lpd = LanguagePod101Downloader(args)
     lpd.authenticate(level_url, USERNAME, PASSWORD)
 
-    lpd.download_level(level_url)
+    stack = lpd.load_download_stack()
+    if stack is None:
+        stack = lpd.create_download_stack(level_url)
+    lpd.work_on_stack(stack)
+
     logging.info('Yatta! Finished downloading the level!')
 
 def check_all_arguments_empty(args):
