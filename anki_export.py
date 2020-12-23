@@ -45,6 +45,12 @@ BASIC_AND_REVERSED_CARD_JP_MODEL = Model(
   css='.card {\n font-family: arial;\n font-size: 20px;\n text-align: center;\n color: black;\n background-color: white;\n}\n',
 )
 
+def createKeyIfNeeded(parent, cards):
+    if cards.get(parent) == None:
+        cards[parent] = dict()
+    return cards
+
+
 class Language:
     """Primitive class with abstract function.
        Scraper needs to return a list of files that need to be downloaded. The download itself need to be done somplace else.
@@ -56,28 +62,38 @@ class Language:
     def CreateDeck(self, title):
         pass
 
+
 class Japanese(Language):
     def __init__(self):
         """Several states need to be stored. They are defined here and later on used when creating the deck."""
         self.language = "Japanese"
-        self.japanese_kana = []
-        self.japanese_pronaunciation = []
-        self.english_definition = []
-        self.japanese_audio =[]
+        self.cards = dict()
         self.audio_files = []
+
 
 
     def Scraper(self, root_url, lesson_soup):
         """Parse through the vocabulary section and get kanji, kana, english definition and audio."""
         needsToBeDownloaded = []
         for i in lesson_soup.find_all("span",  {"lang":"ja", "class":None}):
-            self.japanese_kana.append(i.get_text().strip())
+            parent =  hash(i.find_parent("tr"))
+            self.cards = createKeyIfNeeded(parent, self.cards)
+            self.cards[parent]["japanese_kana"] = i.get_text().strip()
+
         for i in lesson_soup.find_all("span",  {"lang":"ja", "class":"lsn3-lesson-vocabulary__pronunciation"}):
-            self.japanese_pronaunciation.append(i.get_text().strip()[1:-1].strip()) # needs a double strip as the[1:-1] might lead to a leading/trailing whitespace
+            parent =  hash(i.find_parent("tr"))
+            self.cards = createKeyIfNeeded(parent, self.cards)
+            self.cards[parent]["japanese_pronaunciation"] = i.get_text().strip()[1:-1].strip()
+
+
         for i in lesson_soup.find_all("span",  {"class":"lsn3-lesson-vocabulary__definition", "dir":"ltr"}):
             if i.find_parent("span", {"class":"lsn3-lesson-vocabulary__sample js-lsn3-vocabulary-examples"}): # we ignore sample sentences
                 continue
-            self.english_definition.append (i.get_text().strip())
+            parent =  hash(i.find_parent("tr"))
+            self.cards = createKeyIfNeeded(parent, self.cards)
+            self.cards[parent]["english_definition"] = i.get_text().strip()
+
+
 
         for i in lesson_soup.find_all("button",  {"class":"js-lsn3-play-vocabulary", "data-type":"audio/mp3", "data-speed":None}):
             if i.find_parent("span", {"class":"lsn3-lesson-vocabulary__sample js-lsn3-vocabulary-examples"}) or i.find_parent("td", {"class":"lsn3-lesson-vocabulary__td--play05 play05"}):
@@ -85,15 +101,29 @@ class Japanese(Language):
             url_filename = i["data-src"].strip()
             needsToBeDownloaded.append(url_filename)
             name = url_filename.split('/')[-1]
-            self.japanese_audio.append("[sound:" + name +"]")
             self.audio_files.append(name)
+
+            parent =  hash(i.find_parent("tr"))
+            self.cards = createKeyIfNeeded(parent, self.cards)
+            self.cards[parent]["japanese_audio"] = "[sound:" + name +"]"
+            self.cards[parent]["audio_files"] = name
+        self.SanityCheck()
+
         return needsToBeDownloaded
+
+    def SanityCheck(self):
+        for i in self.cards:
+            for j in ["japanese_pronaunciation", "english_definition", "japanese_kana", "japanese_audio"]:
+                if self.cards[i].get(j) is None:
+                    self.cards[i][j] = ""
+                    logging.warning(j + " does not exist")
+
 
     def CreateDeck(self, title):
         """Create a deck from all vocabulary entries"""
         deck = genanki.Deck(abs(hash(title)), title)
-        for i,j in enumerate(self.japanese_kana):
-            deck.add_note(genanki.Note(BASIC_AND_REVERSED_CARD_JP_MODEL, [self.japanese_pronaunciation[i], self.english_definition[i], self.japanese_kana[i], self.japanese_audio[i] ]))
+        for i in self.cards:
+            deck.add_note(genanki.Note(BASIC_AND_REVERSED_CARD_JP_MODEL, [self.cards[i].get("japanese_pronaunciation"), self.cards[i].get("english_definition"), self.cards[i].get("japanese_kana"), self.cards[i].get("japanese_audio") ]))
         my_package = genanki.Package(deck)
         my_package.media_files = self.audio_files
         local_file = "".join(title.split()) +".apkg"

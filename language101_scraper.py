@@ -27,7 +27,7 @@ import logging
 
 MAJOR_VERSION=0
 MINOR_VERSION=5
-PATCH_LEVEL=0
+PATCH_LEVEL=1
 
 VERSION_STRING = str(MAJOR_VERSION) + "."+ str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
 __version__ = VERSION_STRING
@@ -465,6 +465,16 @@ class LanguagePod101Downloader:
         stack = None
         save_download_stack(stack)
 
+    def force_new_download_stack(self):
+        if self.m_arguments.get("force-new-download-stack") is None:
+            return False
+
+        if self.m_arguments.get("force-new-download-stack") is False:
+            return False
+        else:
+            return True
+
+
 def main(username, password, url, args):
     USERNAME = username or input('Username (mail): ')
     PASSWORD = password or getpass('Password: ')
@@ -476,8 +486,9 @@ def main(username, password, url, args):
     )
     lpd = LanguagePod101Downloader(args)
     lpd.authenticate(level_url, USERNAME, PASSWORD)
-
-    stack = lpd.load_download_stack()
+    stack = None
+    if not lpd.force_new_download_stack():
+        stack = lpd.load_download_stack()
     if stack is None:
         stack = lpd.create_download_stack(level_url)
     lpd.work_on_stack(stack)
@@ -502,6 +513,7 @@ def get_input_arguments():
     parser.add_argument('-v', '--video', default=True, type=bool, help='Download videos')
     parser.add_argument('-a', '--audio', default=True, type=bool, help='Download audio')
     parser.add_argument('-d', '--document', default=True, type=bool, help='Download documents e.g. pdfs')
+    parser.add_argument('-f', '--force_new_download-stack', type=bool, help='Forces a clean download stack and abandones old states')
     parser.add_argument('--url', help='URL for the language level to download')
     parser.add_argument('-c', '--config', help='Provide config file for input')
     parser.add_argument('--anki_deck', default=False, help='Create anki decks from vocabulary')
