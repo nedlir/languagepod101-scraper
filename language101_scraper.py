@@ -25,25 +25,27 @@ import anki_export
 
 import logging
 
-MAJOR_VERSION=0
-MINOR_VERSION=5
-PATCH_LEVEL=2
+MAJOR_VERSION = 0
+MINOR_VERSION = 5
+PATCH_LEVEL = 2
 
-VERSION_STRING = str(MAJOR_VERSION) + "."+ str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
+VERSION_STRING = str(MAJOR_VERSION) + "." + \
+    str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
 __version__ = VERSION_STRING
 
 FAKE_BROWSER_HEADERS = {
     "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3",
     "user-agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 Safari/537.366",
-    "accept-language":"en-US,en;q=0.9,ja;q=0.8",
-    "cache-control":"no-cache",
-    "pragma":"no-cache",
+    "accept-language": "en-US,en;q=0.9,ja;q=0.8",
+    "cache-control": "no-cache",
+    "pragma": "no-cache",
     "sec-fetch-mode":
     "navigate",
-    "sec-fetch-site":"none",
-    "sec-fetch-user":"?1",
-    "upgrade-insecure-requests":"1"
+    "sec-fetch-site": "none",
+    "sec-fetch-user": "?1",
+    "upgrade-insecure-requests": "1"
 }
+
 
 class LanguagePod101Downloader:
     """Wrapper class for storing states e.g. arguments or config states"""
@@ -56,7 +58,8 @@ class LanguagePod101Downloader:
         boolean_values = ["video", "audio", "document", "anki_deck"]
         for i in ["video", "audio", "document", "anki_deck"]:
             if type(self.m_arguments.get(i)) is not bool:
-                self.m_arguments[i] = self.m_arguments.get(i).lower() in ['true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh'] #convert to bool
+                self.m_arguments[i] = self.m_arguments.get(i).lower() in [
+                    'true', '1', 't', 'y', 'yes', 'yeah', 'yup', 'certainly', 'uh-huh']  # convert to bool
 
         for i in ["min_delay", "max_delay"]:
             if type(self.m_arguments.get(i)) is str:
@@ -64,18 +67,19 @@ class LanguagePod101Downloader:
 
         minD = self.m_arguments.get("min_delay")
         maxD = self.m_arguments.get("max_delay")
-        ## check if min and max value are really min and max
-        if type (minD) is int and type (maxD) is int:
-            #Do the old switcheroo if necessary and bind to a minimum of zero
-            self.m_arguments["min_delay"] = max(0,min(minD, maxD))
-            self.m_arguments["max_delay"] = max(0,max(minD, maxD))
+        # check if min and max value are really min and max
+        if type(minD) is int and type(maxD) is int:
+            # Do the old switcheroo if necessary and bind to a minimum of zero
+            self.m_arguments["min_delay"] = max(0, min(minD, maxD))
+            self.m_arguments["max_delay"] = max(0, max(minD, maxD))
             if self.m_arguments["min_delay"] != minD or self.m_arguments.get("max_delay") != maxD:
-                logging.warning( "Delay is not correctly set. New delay is: ")
-                logging.warning( "min:" + str(self.m_arguments["min_delay"]) )
-                logging.warning( "max:" + str(self.m_arguments["max_delay"]) )
+                logging.warning("Delay is not correctly set. New delay is: ")
+                logging.warning("min:" + str(self.m_arguments["min_delay"]))
+                logging.warning("max:" + str(self.m_arguments["max_delay"]))
 
         debugConfigWithoutPassword = self.m_arguments
-        debugConfigWithoutPassword["password"] = 8 * "*" ## no need for blasting out the password in a log
+        # no need for blasting out the password in a log
+        debugConfigWithoutPassword["password"] = 8 * "*"
         logging.debug(debugConfigWithoutPassword)
 
     def parse_url(self, url):
@@ -114,13 +118,13 @@ class LanguagePod101Downloader:
             response.raise_for_status()
         except Exception as e:
             logging.error(e)
-            logging.error('Could not reach site. Please check URL and internet connection.')
+            logging.error(
+                'Could not reach site. Please check URL and internet connection.')
             exit(1)
 
         if 'X-Ill-Member' not in response.headers:
             return False
         return True
-
 
     def authenticate(self, url, username, password):
         """Logs in to the website via an old session or a new one"""
@@ -128,7 +132,7 @@ class LanguagePod101Downloader:
 
         logging.debug(f'Trying to log in to {root_url}')
         self.m_session = requests.Session()
-        cachedSession= False
+        cachedSession = False
         loadCookie = self.load_cookie()
         self.m_session.headers.update(FAKE_BROWSER_HEADERS)
 
@@ -137,7 +141,7 @@ class LanguagePod101Downloader:
             response = self.m_session.post(login_url)
             if self.check_if_authenticated(response):
                 logging.info('Sucessfully logged in via old session.')
-                cachedSession= True
+                cachedSession = True
                 return
         if not cachedSession:
             credentials = {'amember_login': username, 'amember_pass': password}
@@ -150,19 +154,20 @@ class LanguagePod101Downloader:
             logging.error('Could not log in. Please check your credentials.')
             exit(1)
 
-
     def download_audios(self, lesson_number, lesson_soup):
         """Download the audio files of a lesson"""
         audio_soup = lesson_soup.find_all('audio')
 
         if audio_soup:
-            logging.info(f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} audio')
+            logging.info(
+                f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} audio')
             for audio_file in audio_soup:
                 try:
                     file_url = audio_file['data-trackurl']
                 except Exception as e:
                     logging.debug(e)
-                    logging.debug('Tag "data-trackurl" was not found, trying to reach "data-url" tag instead')
+                    logging.debug(
+                        'Tag "data-trackurl" was not found, trying to reach "data-url" tag instead')
                     try:
                         file_url = audio_file['data-url']
                     except Exception as e:
@@ -208,8 +213,6 @@ class LanguagePod101Downloader:
             self.save_file(i, name)
         voc_scraper.CreateDeck(lesson_soup.title.text)
 
-
-
     def download_pdfs(self, root_url, lesson_soup):
         """Download the PDF files of a lesson"""
         # Beware: Access to PDFs requires Basic or Premium membership
@@ -222,13 +225,13 @@ class LanguagePod101Downloader:
                 pdf_name = pdf_url.split('/')[-1]
                 self.save_file(pdf_url, pdf_name)
 
-
     def download_videos(self, lesson_number, lesson_soup):
         """Download the video files of a lesson"""
         video_soup = lesson_soup.find_all('source')
 
         if video_soup:
-            logging.info(f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} video')
+            logging.info(
+                f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} video')
             for video_file in video_soup:
                 try:
                     if video_file['type'] == 'video/mp4':
@@ -238,7 +241,8 @@ class LanguagePod101Downloader:
                         continue
                 except Exception as e:
                     logging.warning(e)
-                    logging.warning('Could not find out the URL for this lesson\'s video.')
+                    logging.warning(
+                        'Could not find out the URL for this lesson\'s video.')
                     continue
 
                 # Verifies that the file is in 'mp4' or 'm4v' format.
@@ -255,7 +259,6 @@ class LanguagePod101Downloader:
 
                     self.save_file(file_url, file_name)
 
-
     def get_filename_body(self, lesson_soup):
         """Generate main body of filename from page's title"""
         filename_body = lesson_soup.title.text
@@ -268,7 +271,6 @@ class LanguagePod101Downloader:
 
         return filename_body
 
-
     def get_soup(self, url):
         """Return the BeautifulSoup object for the given URL"""
         res = self.m_session.get(url)
@@ -276,18 +278,19 @@ class LanguagePod101Downloader:
             res.raise_for_status()
         except Exception as e:
             logging.error(e)
-            logging.error('Could not download web page. Please make sure the URL is accurate.')
+            logging.error(
+                'Could not download web page. Please make sure the URL is accurate.')
             exit(1)
 
         try:
             soup = BeautifulSoup(res.text, 'lxml')
         except Exception as e:
             logging.error(e)
-            logging.error('Failed to parse the webpage, "lxml" package might be missing.')
+            logging.error(
+                'Failed to parse the webpage, "lxml" package might be missing.')
             exit(1)
 
         return soup
-
 
     def get_lessons_urls(self, pathway_url):
         """Return a list of the URLs of the lessons in the given pathway URL"""
@@ -295,9 +298,9 @@ class LanguagePod101Downloader:
         pathway_soup = self.get_soup(pathway_url)
         div = pathway_soup.select_one('#pw_page')
         entries = json.loads(div['data-collection-entries'])
-        lessons_urls = [root_url + entry['url'] for entry in entries if entry.get('url')]
+        lessons_urls = [root_url + entry['url']
+                        for entry in entries if entry.get('url')]
         return lessons_urls
-
 
     def get_pathways_urls(self, level_url):
         """Return a lists of the URLs of the pathways in the given language level URL"""
@@ -305,9 +308,9 @@ class LanguagePod101Downloader:
         level_soup = self.get_soup(level_url)
         level_name = level_url.split('/')[-1].replace('-', '')
         pathways_links = level_soup.select(f'a[data-{level_name}="1"]')
-        pathways_urls = set([root_url + link['href'] for link in pathways_links])
+        pathways_urls = set([root_url + link['href']
+                             for link in pathways_links])
         return pathways_urls
-
 
     def download_pathway(self, pathway_url):
         """Download the lessons in the given pathway URL"""
@@ -324,7 +327,7 @@ class LanguagePod101Downloader:
 
     def download_level(self, level_url):
         """Download all the pathways in the given language level URL"""
-        ## This option is unfeasable for use as a standard behavior even with restoring the last download state
+        # This option is unfeasable for use as a standard behavior even with restoring the last download state
         url_parts = level_url.split('/')
         if check_for_lessons_library(self, level_url):
             e = '''You should provide the URL for a language level, not a lesson.
@@ -348,7 +351,7 @@ class LanguagePod101Downloader:
             [pathway_name, lessons] = self.download_pathway(i)
             logging.info(lessons)
             for j in lessons:
-                stack["lesson"][j] = [level_name + pathway_name,False]
+                stack["lesson"][j] = [level_name + pathway_name, False]
         self.save_download_stack(stack)
         return stack
 
@@ -366,10 +369,10 @@ class LanguagePod101Downloader:
         return stack
 
     def create_download_stack(self, level_url):
-        if self.check_for_lessons_library( level_url):
-            return self.create_stack_for_level( level_url)
+        if self.check_for_lessons_library(level_url):
+            return self.create_stack_for_level(level_url)
         else:
-            return self.create_stack_for_lesson( level_url)
+            return self.create_stack_for_lesson(level_url)
 
     def save_download_stack(self, stack):
         stackpath = expanduser("~") + "/.config/languagepod101/"
@@ -389,7 +392,8 @@ class LanguagePod101Downloader:
                 try:
                     stack = pickle.load(f)
                     if stack["version"] != __version__:
-                        logging.warning("Attention trying to use an old download stack with a newer version, this might cause undefined behavior. If you are unsure create a backup and continue with YES.")
+                        logging.warning(
+                            "Attention trying to use an old download stack with a newer version, this might cause undefined behavior. If you are unsure create a backup and continue with YES.")
                         if input("Please confirm with YES (all capital) to continue. No further warning will happen:\r\n") != "YES":
                             exit(1)
                         logging.info("Rewriting version of download stack")
@@ -422,14 +426,14 @@ class LanguagePod101Downloader:
             logging.warning(f'Failed to save {file_name} on local device.')
 
     def work_on_stack(self, stack):
-        ##stack
+        # stack
         # key lessonurl:  path, Done?
         lessons_counter = dict()
         old_cwd = os.getcwd()
         for sublesson in stack["lesson"]:
 
             lesson_url = sublesson
-            path       = stack["lesson"][sublesson][0]
+            path = stack["lesson"][sublesson][0]
             isFinished = stack["lesson"][sublesson][-1]
             if lessons_counter.get(path) is None:
                 lessons_counter[path] = 0
@@ -443,7 +447,8 @@ class LanguagePod101Downloader:
 
             root_url, _ = self.parse_url(lesson_url)
             lesson_soup = self.get_soup(lesson_url)
-            self.save_file(lesson_url, f'{str(lesson_number).zfill(2)} - {lesson_soup.title.text}.html')
+            self.save_file(
+                lesson_url, f'{str(lesson_number).zfill(2)} - {lesson_soup.title.text}.html')
             if self.m_arguments.get("audio"):
                 self.download_audios(lesson_number, lesson_soup)
             if self.m_arguments.get("video"):
@@ -457,11 +462,12 @@ class LanguagePod101Downloader:
             self.save_download_stack(stack)
 
             if self.m_arguments.get("min_delay") and self.m_arguments.get("max_delay"):
-                delay = random.randrange(self.m_arguments["min_delay"],self.m_arguments["max_delay"])
-                logging.debug("Sleeping for "+ str(delay) + " seconds")
+                delay = random.randrange(
+                    self.m_arguments["min_delay"], self.m_arguments["max_delay"])
+                logging.debug("Sleeping for " + str(delay) + " seconds")
                 time.sleep(delay)
             os.chdir(old_cwd)
-        ## empty stack and save
+        # empty stack and save
         stack = None
         self.save_download_stack(stack)
 
@@ -495,6 +501,7 @@ def main(username, password, url, args):
 
     logging.info('Yatta! Finished downloading the level!')
 
+
 def check_all_arguments_empty(args):
     """This functions checks if all arguments e.g. provided by sys.arg"""
     vargs = vars(args)
@@ -503,6 +510,7 @@ def check_all_arguments_empty(args):
             return False
     return True
 
+
 def get_input_arguments():
     """Get the behavior either via the arguments or via a config file"""
     parser = argparse.ArgumentParser(
@@ -510,14 +518,20 @@ def get_input_arguments():
     )
     parser.add_argument('-u', '--username', help='Username (email)')
     parser.add_argument('-p', '--password', help='Password for the course')
-    parser.add_argument('-v', '--video', default=True, type=bool, help='Download videos')
-    parser.add_argument('-a', '--audio', default=True, type=bool, help='Download audio')
-    parser.add_argument('-d', '--document', default=True, type=bool, help='Download documents e.g. pdfs')
-    parser.add_argument('-f', '--force_new_download-stack', type=bool, help='Forces a clean download stack and abandones old states')
+    parser.add_argument('-v', '--video', default=True,
+                        type=bool, help='Download videos')
+    parser.add_argument('-a', '--audio', default=True,
+                        type=bool, help='Download audio')
+    parser.add_argument('-d', '--document', default=True,
+                        type=bool, help='Download documents e.g. pdfs')
+    parser.add_argument('-f', '--force_new_download-stack', type=bool,
+                        help='Forces a clean download stack and abandones old states')
     parser.add_argument('--url', help='URL for the language level to download')
     parser.add_argument('-c', '--config', help='Provide config file for input')
-    parser.add_argument('--anki_deck', default=False, help='Create anki decks from vocabulary')
-    parser.add_argument('--download_all_videos', default=False, type=bool, help='Downloads all videos independent of quality')
+    parser.add_argument('--anki_deck', default=False,
+                        help='Create anki decks from vocabulary')
+    parser.add_argument('--download_all_videos', default=False,
+                        type=bool, help='Downloads all videos independent of quality')
     args = parser.parse_args()
     vargs = vars(args)
     if args.config is not None:
@@ -529,7 +543,7 @@ def get_input_arguments():
             logging.error(e)
             logging.error(f'Failed to load config file: ' + args.config)
             exit(1)
-        for key,content in config['User'].items():
+        for key, content in config['User'].items():
             vargs[key] = content
 
     elif check_all_arguments_empty(args):
@@ -541,27 +555,30 @@ def get_input_arguments():
                 config.read(configpath)
             except Exception as e:
                 logging.warning(e)
-                logging.warning(f'Failed to load standard config file: ' + config)
-            for key,content in config['User'].items():
+                logging.warning(
+                    f'Failed to load standard config file: ' + config)
+            for key, content in config['User'].items():
                 vargs[key] = content
         else:
             logging.warning("Couldn't find default config file")
     return args
+
 
 def setupLoging():
     logingpath = expanduser("~") + "/.local/share/languagepod101/"
     if not path.exists(logingpath):
         os.mkdir(logingpath)
     logging.basicConfig(level=logging.DEBUG,
-                    format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                    datefmt='%m-%d %H:%M',
-                    filename=logingpath + "lp101.log",
-                    filemode='w')
+                        format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                        datefmt='%m-%d %H:%M',
+                        filename=logingpath + "lp101.log",
+                        filemode='w')
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
     console.setFormatter(formatter)
     logging.getLogger('').addHandler(console)
+
 
 if __name__ == '__main__':
     setupLoging()
