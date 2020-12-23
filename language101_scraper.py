@@ -27,7 +27,7 @@ import logging
 
 MAJOR_VERSION=0
 MINOR_VERSION=5
-PATCH_LEVEL=1
+PATCH_LEVEL=2
 
 VERSION_STRING = str(MAJOR_VERSION) + "."+ str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
 __version__ = VERSION_STRING
@@ -463,7 +463,7 @@ class LanguagePod101Downloader:
             os.chdir(old_cwd)
         ## empty stack and save
         stack = None
-        save_download_stack(stack)
+        self.save_download_stack(stack)
 
     def force_new_download_stack(self):
         if self.m_arguments.get("force-new-download-stack") is None:

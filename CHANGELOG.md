@@ -28,3 +28,7 @@ Version 0.5.1
 ===========
 - fixed crashes for anki export if a single field is missing
 - created commandline argument to force a new download "-f"
+
+Version 0.5.2
+===========
+- fix in function call, when the download stack should be cleaned up after successfully downloading all elements
