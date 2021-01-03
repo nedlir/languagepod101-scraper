@@ -183,7 +183,11 @@ def get_lessons_urls(pathway_url):
     root_url, _ = parse_url(pathway_url)
     pathway_soup = get_soup(pathway_url)
     div = pathway_soup.select_one('#pw_page')
-    entries = json.loads(div['data-collection-entries'])
+    try:
+        entries = json.loads(div['data-collection-entries'])
+    except:
+        print(f'***WARNING*** Could not parse {pathway_url}')
+        return []
     lessons_urls = [root_url + entry['url'] for entry in entries if entry.get('url')]
     return lessons_urls
 
@@ -246,7 +250,7 @@ def save_file(file_url, file_name):
             print(f'{file_name} saved on local device!')
     except Exception as e:
         print(e)
-        print(f'Failed to save {file_name} on local device.')
+        print(f'Failed to save {file_name} on local device. Check free space on disk.')
 
 
 def main(username, password, url):
