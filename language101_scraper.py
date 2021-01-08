@@ -3,6 +3,12 @@
 # japanesepod101.com, spanishpod101.com, chineseclass101.com and more!
 
 import argparse
+import configparser
+from os.path import expanduser
+from os import path
+
+from getpass import getpass
+
 import json
 import os
 
@@ -12,6 +18,12 @@ from urllib.parse import urlparse
 import requests
 
 from bs4 import BeautifulSoup
+
+MAJOR_VERSION=0
+MINOR_VERSION=1
+PATCH_LEVEL=0
+
+VERSION_STRING = str(MAJOR_VERSION) + "."+ str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
 
 session = None
 
@@ -255,7 +267,7 @@ def save_file(file_url, file_name):
 
 def main(username, password, url):
     USERNAME = username or input('Username (mail): ')
-    PASSWORD = password or input('Password: ')
+    PASSWORD = password or getpass('Password: ')
     level_url = url or input(
         'Please enter URL of the study level for the desired language. For example:\n'
         ' * https://www.japanesepod101.com/lesson-library/absolute-beginner\n'
@@ -269,14 +281,55 @@ def main(username, password, url):
 
     print('Yatta! Finished downloading the level!')
 
+def check_all_arguments_empty(args):
+    """This functions checks if all arguments e.g. provided by sys.arg"""
+    vargs = vars(args)
+    for i in vargs:
+        if vargs[i] is not None:
+            return False
+    return True
 
-if __name__ == '__main__':
+def get_input_arguments():
+    """Get the behavior either via the arguments or via a config file"""
     parser = argparse.ArgumentParser(
-        description='Scrape full language courses by Innovative Language.'
+        description='Scrape full language courses by Innovative Language.Version = ' + VERSION_STRING
     )
     parser.add_argument('-u', '--username', help='Username (email)')
     parser.add_argument('-p', '--password', help='Password for the course')
     parser.add_argument('--url', help='URL for the language level to download')
-
+    parser.add_argument('--config', help='Provide config file for input')
     args = parser.parse_args()
+    vargs = vars(args)
+    if args.config is not None:
+        print ("reading config")
+        config = configparser.ConfigParser()
+        try:
+            config.read(args.config)
+        except Exception as e:
+            print(e)
+            print(f'Failed to load config file: ' + args.config)
+            exit(1)
+        for key,content in config['User'].items():
+            vargs[key] = content
+
+    elif check_all_arguments_empty(args):
+        print ("Trying to use default config file")
+        configpath = expanduser("~") + "/.config/languagepod101/lp101.config"
+        print ( configpath )
+        config = configparser.ConfigParser()
+        if path.exists(configpath):
+            try:
+                config.read(configpath)
+            except Exception as e:
+                print(e)
+                print(f'Failed to load standard config file: ' + config)
+            for key,content in config['User'].items():
+                vargs[key] = content
+        else:
+            print("Couldn't find default config file")
+
+    return args
+
+if __name__ == '__main__':
+    args = get_input_arguments()
     main(args.username, args.password, args.url)
