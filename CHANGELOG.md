@@ -32,3 +32,7 @@ Version 0.5.1
 Version 0.5.2
 ===========
 - fix in function call, when the download stack should be cleaned up after successfully downloading all elements
+
+Version 0.5.3
+===========
+- fix in function call for download level URL

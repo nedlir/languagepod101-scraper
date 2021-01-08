@@ -27,7 +27,7 @@ import logging
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 5
-PATCH_LEVEL = 2
+PATCH_LEVEL = 3
 
 VERSION_STRING = str(MAJOR_VERSION) + "." + \
     str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
@@ -329,7 +329,7 @@ class LanguagePod101Downloader:
         """Download all the pathways in the given language level URL"""
         # This option is unfeasable for use as a standard behavior even with restoring the last download state
         url_parts = level_url.split('/')
-        if check_for_lessons_library(self, level_url):
+        if self.check_for_lessons_library(level_url):
             e = '''You should provide the URL for a language level, not a lesson.
             Eg: https://www.japanesepod101.com/lesson-library/absolute-beginner'''
             logging.error(e)
