@@ -4,14 +4,12 @@
 
 import argparse
 import configparser
-from os.path import expanduser
-from os import path
-
-from getpass import getpass
-
 import json
 import os
 
+from getpass import getpass
+from os.path import expanduser
+from os import path
 from sys import exit
 from urllib.parse import urlparse
 
@@ -19,11 +17,12 @@ import requests
 
 from bs4 import BeautifulSoup
 
-MAJOR_VERSION=0
-MINOR_VERSION=1
-PATCH_LEVEL=0
+MAJOR_VERSION = 0
+MINOR_VERSION = 1
+PATCH_LEVEL = 0
 
-VERSION_STRING = str(MAJOR_VERSION) + "."+ str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
+VERSION_STRING = str(MAJOR_VERSION) + "." + \
+    str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
 
 session = None
 
@@ -200,7 +199,8 @@ def get_lessons_urls(pathway_url):
     except:
         print(f'***WARNING*** Could not parse {pathway_url}')
         return []
-    lessons_urls = [root_url + entry['url'] for entry in entries if entry.get('url')]
+    lessons_urls = [root_url + entry['url']
+                    for entry in entries if entry.get('url')]
     return lessons_urls
 
 
@@ -262,7 +262,8 @@ def save_file(file_url, file_name):
             print(f'{file_name} saved on local device!')
     except Exception as e:
         print(e)
-        print(f'Failed to save {file_name} on local device. Check free space on disk.')
+        print(
+            f'Failed to save {file_name} on local device. Check free space on disk.')
 
 
 def main(username, password, url):
@@ -281,6 +282,7 @@ def main(username, password, url):
 
     print('Yatta! Finished downloading the level!')
 
+
 def check_all_arguments_empty(args):
     """This functions checks if all arguments e.g. provided by sys.arg"""
     vargs = vars(args)
@@ -288,6 +290,7 @@ def check_all_arguments_empty(args):
         if vargs[i] is not None:
             return False
     return True
+
 
 def get_input_arguments():
     """Get the behavior either via the arguments or via a config file"""
@@ -301,7 +304,7 @@ def get_input_arguments():
     args = parser.parse_args()
     vargs = vars(args)
     if args.config is not None:
-        print ("reading config")
+        print("reading config")
         config = configparser.ConfigParser()
         try:
             config.read(args.config)
@@ -309,13 +312,13 @@ def get_input_arguments():
             print(e)
             print(f'Failed to load config file: ' + args.config)
             exit(1)
-        for key,content in config['User'].items():
+        for key, content in config['User'].items():
             vargs[key] = content
 
     elif check_all_arguments_empty(args):
-        print ("Trying to use default config file")
+        print("Trying to use default config file")
         configpath = expanduser("~") + "/.config/languagepod101/lp101.config"
-        print ( configpath )
+        print(configpath)
         config = configparser.ConfigParser()
         if path.exists(configpath):
             try:
@@ -323,12 +326,13 @@ def get_input_arguments():
             except Exception as e:
                 print(e)
                 print(f'Failed to load standard config file: ' + config)
-            for key,content in config['User'].items():
+            for key, content in config['User'].items():
                 vargs[key] = content
         else:
             print("Couldn't find default config file")
 
     return args
+
 
 if __name__ == '__main__':
     args = get_input_arguments()
