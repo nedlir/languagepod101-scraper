@@ -1,14 +1,17 @@
-<h1 align="center">:zap: languagepod101-scraper	:zap:</h1>
-<p align="center">
-  <img src="readme\language_selection.jpg" alt="Language selection">
-  <br>
-  <i>languagepod101-scraper is a resource for dozen of language learning courses and study material for FREE.</i>
-</p>
-<hr>
+<div align='center'>
+:zap: languagepod101-scraper :zap:
+==================================
+
+![Languages available](readme/language_selection.jpg)
+
+_languagepod101-scraper is a resource for dozens of language learning courses and study material for FREE._
+</div>
+
+---
 
 ## :mortar_board: About
 
-languagepod101-scraper helps you download full language courses and save them on your local folder as MP3 files.
+languagepod101-scraper helps you download full online language courses and save them on your local folder as MP3/MP4 files.
 The courses are produced and distributed by [Innovative Language](https://www.innovativelanguage.com/online-language-courses),
 who provides language learning courses from a selection of dozens of languages. Each lesson is usually 10-20 minutes long.
 
@@ -31,7 +34,7 @@ To use the script, fulfill the requirements and follow the example as demonstrat
 
 ### :bookmark_tabs: Example
 
-For the sake of example, the process of downloading of a course from
+For the sake of example, the process of downloading of a level from
 [Japanese Pod 101](https://www.japanesepod101.com/) will be demonstrated.
 
 Japanese Pod 101 and all other sites have a similar structure which looks as following:
@@ -65,12 +68,12 @@ Japanese Pod 101 and all other sites have a similar structure which looks as fol
   │  ├─ ...
   ```
 
-- To download *Lower Beginner Season 1* we will have to use our web browser to navigate
-  to `lesson 1` of this course (any other lesson url from the **same course** is ok too...).
+- To download *Level 2 - Beginner* we will have to use our web browser to navigate
+  to this course.
 
-  Navigation would look like this: `Japanesepod101` → `Level 2 - Beginner` → `Lower Beginner Season 1` → `lesson 01`.
+  Navigation would look like this: `Japanesepod101` → `Level 2 - Beginner`.
   
-  Save the URL for `lesson 01` from the address bar, as you will have to provide it to the script later on.
+  Save the URL for the address bar, as you will have to provide it to the script later on.
 
 - Create a directory in your PC for this course, and enter into it.
 
@@ -79,31 +82,33 @@ Japanese Pod 101 and all other sites have a similar structure which looks as fol
 
   - the email you used to sign up for the course
   - your password for the course
-  - the course's lesson URL you have navigated through earlier
-    (in our example: `lesson 01` of the `Lower Beginner Season 1` course).
+  - the URL for the language study level you have navigated through earlier
+    (something like `https://www.japanesepod101.com/lesson-library/beginner`).
 
 - Alternatively, you can pass the data as parameters when invoking the script:
 
   ```sh
-  ./language101_scraper.py -u $USERNAME -p $PASSWORD --url YOUR_LESSON_URL
+  ./language101_scraper.py -u $USERNAME -p $PASSWORD --url YOUR_LEVEL_URL
   ```
 
-- The script will start downloading the MP3 files into the local navigated folder.
+- The script will start downloading the MP3/MP4 files into the local navigated folder.
   Any possible errors would be printed out.
 
 - Output inside folder should look like this:
 
   ```
-  ├─01 - A Formal Japanese Introduction - JapanesePod101 - Dialogue.mp3
-  ├─01 - A Formal Japanese Introduction - JapanesePod101 - Review.mp3
-  ├─01 - A Formal Japanese Introduction - JapanesePod101 - Main Lesson.mp3
-  ├─02 - Which Famous Tokyo Tower is That - JapanesePod101 - Dialogue.mp3
-  ├─02 - Which Famous Tokyo Tower is That - JapanesePod101 - Main Lesson.mp3
-  ├─02 - Which Famous Tokyo Tower is That - JapanesePod101 - Review.mp3
-  ├─03 - Networking in Japan - JapanesePod101 - Dialogue.mp3
-  ├─03 - Networking in Japan - JapanesePod101 - Main Lesson.mp3
-  ├─03 - Networking in Japan - JapanesePod101 - Review.mp3
-  ├─...
+  beginner
+  ├─level-2-japanese
+  | ├─01 - A Formal Japanese Introduction - JapanesePod101 - Dialogue.mp3
+  | ├─01 - A Formal Japanese Introduction - JapanesePod101 - Review.mp3
+  | ├─01 - A Formal Japanese Introduction - JapanesePod101 - Main Lesson.mp3
+  | ├─02 - Which Famous Tokyo Tower is That - JapanesePod101 - Dialogue.mp3
+  | └─...
+  ├─japanese-grammar-made-easy
+  | ├─01 - How to Talk About Your Family - JapanesePod101.mp4
+  | ├─02 - How to Express Desire in Japanese Want To - JapanesePod101.mp4
+  | └─...
+  └─...
   ```
 
 ## :clipboard: Disclaimer and known issues
