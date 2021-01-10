@@ -65,7 +65,7 @@ def download_audios(lesson_number, lesson_soup):
 
     if audio_soup:
         print(
-            f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} audio'
+            f'Downloading Lesson {str(lesson_number).zfill(3)} - {lesson_soup.title.text} audio'
         )
         for audio_file in audio_soup:
             try:
