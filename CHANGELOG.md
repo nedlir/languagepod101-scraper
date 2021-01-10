@@ -36,3 +36,10 @@ Version 0.5.2
 Version 0.5.3
 ===========
 - fix in function call for download level URL
+
+Version 0.5.4
+===========
+- merge with master from nedlir
+- changed zfill to 3 instead of 2
+- added try-block for 'data-collection-entries' from quique
+

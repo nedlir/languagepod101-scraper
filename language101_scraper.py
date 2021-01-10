@@ -15,9 +15,6 @@ import time
 import json
 import os
 
-from getpass import getpass
-from os.path import expanduser
-from os import path
 from sys import exit
 from urllib.parse import urlparse
 
@@ -304,7 +301,7 @@ class LanguagePod101Downloader:
             entries = json.loads(div['data-collection-entries'])
         except:
 
-            logging.warning(Could not parse {pathway_url}')
+            logging.warning(f'Could not parse {pathway_url}')
             return []
 
         lessons_urls = [root_url + entry['url']
