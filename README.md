@@ -1,10 +1,13 @@
-<h1 align="center">:zap: languagepod101-scraper	:zap:</h1>
-<p align="center">
-  <img src="readme\language_selection.jpg" alt="Language selection">
-  <br>
-  <i>languagepod101-scraper is a resource for dozen of language learning courses and study material for FREE.</i>
-</p>
-<hr>
+<div align='center'>
+:zap: languagepod101-scraper :zap:
+==================================
+
+![Languages available](readme/language_selection.jpg)
+
+_languagepod101-scraper is a resource for dozens of language learning courses and study material for FREE._
+</div>
+
+---
 
 ## :mortar_board: About
 
@@ -71,7 +74,6 @@ Japanese Pod 101 and all other sites have a similar structure which looks as fol
   Navigation would look like this: `Japanesepod101` → `Level 2 - Beginner`.
   
   Save the URL for the address bar, as you will have to provide it to the script later on.
-
 - Run the [language101_scraper.py](language101_scraper.py) script, and follow the instructions.
   You will have to provide:
 

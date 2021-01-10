@@ -15,6 +15,9 @@ import time
 import json
 import os
 
+from getpass import getpass
+from os.path import expanduser
+from os import path
 from sys import exit
 from urllib.parse import urlparse
 
@@ -27,7 +30,7 @@ import logging
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 5
-PATCH_LEVEL = 3
+PATCH_LEVEL = 4
 
 VERSION_STRING = str(MAJOR_VERSION) + "." + \
     str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
@@ -160,7 +163,7 @@ class LanguagePod101Downloader:
 
         if audio_soup:
             logging.info(
-                f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} audio')
+                f'Downloading Lesson {str(lesson_number).zfill(3)} - {lesson_soup.title.text} audio')
             for audio_file in audio_soup:
                 try:
                     file_url = audio_file['data-trackurl']
@@ -181,7 +184,7 @@ class LanguagePod101Downloader:
 
                     # Create a clean filename string with prefix, body, suffix and extension.
                     # Files are numbered using the 'lesson_number' variable
-                    file_prefix = str(lesson_number).zfill(2)
+                    file_prefix = str(lesson_number).zfill(3)
                     file_body = self.get_filename_body(lesson_soup)
 
                     file_suffix = file_url.split('/')[-1]
@@ -231,7 +234,7 @@ class LanguagePod101Downloader:
 
         if video_soup:
             logging.info(
-                f'Downloading Lesson {str(lesson_number).zfill(2)} - {lesson_soup.title.text} video')
+                f'Downloading Lesson {str(lesson_number).zfill(3)} - {lesson_soup.title.text} video')
             for video_file in video_soup:
                 try:
                     if video_file['type'] == 'video/mp4':
@@ -252,7 +255,7 @@ class LanguagePod101Downloader:
 
                     # Create a clean file name string with prefix, body and extension.
                     # Files are numbered using the 'lesson_number' variable
-                    file_prefix = str(lesson_number).zfill(2)
+                    file_prefix = str(lesson_number).zfill(3)
                     file_body = self.get_filename_body(lesson_soup)
                     file_ext = file_url.split('.')[-1]
                     file_name = f'{file_prefix} - {file_body}.{file_ext}'
@@ -297,7 +300,13 @@ class LanguagePod101Downloader:
         root_url, _ = self.parse_url(pathway_url)
         pathway_soup = self.get_soup(pathway_url)
         div = pathway_soup.select_one('#pw_page')
-        entries = json.loads(div['data-collection-entries'])
+        try:
+            entries = json.loads(div['data-collection-entries'])
+        except:
+
+            logging.warning(Could not parse {pathway_url}')
+            return []
+
         lessons_urls = [root_url + entry['url']
                         for entry in entries if entry.get('url')]
         return lessons_urls
@@ -448,7 +457,7 @@ class LanguagePod101Downloader:
             root_url, _ = self.parse_url(lesson_url)
             lesson_soup = self.get_soup(lesson_url)
             self.save_file(
-                lesson_url, f'{str(lesson_number).zfill(2)} - {lesson_soup.title.text}.html')
+                lesson_url, f'{str(lesson_number).zfill(3)} - {lesson_soup.title.text}.html')
             if self.m_arguments.get("audio"):
                 self.download_audios(lesson_number, lesson_soup)
             if self.m_arguments.get("video"):
@@ -536,6 +545,7 @@ def get_input_arguments():
     vargs = vars(args)
     if args.config is not None:
         logging.info("reading config")
+
         config = configparser.ConfigParser()
         try:
             config.read(args.config)
