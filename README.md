@@ -74,9 +74,6 @@ Japanese Pod 101 and all other sites have a similar structure which looks as fol
   Navigation would look like this: `Japanesepod101` → `Level 2 - Beginner`.
   
   Save the URL for the address bar, as you will have to provide it to the script later on.
-
-- Create a directory in your PC for this course, and enter into it.
-
 - Run the [language101_scraper.py](language101_scraper.py) script, and follow the instructions.
   You will have to provide:
 
@@ -90,6 +87,9 @@ Japanese Pod 101 and all other sites have a similar structure which looks as fol
   ```sh
   ./language101_scraper.py -u $USERNAME -p $PASSWORD --url YOUR_LEVEL_URL
   ```
+
+- It is again possible to download single lessons with the same syntax as before. However, rather than providing the language study level, the course's lesson URL has to be provided
+  ( for example: `lesson 01` of the `Lower Beginner Season 1` course).
 
 - The script will start downloading the MP3/MP4 files into the local navigated folder.
   Any possible errors would be printed out.
