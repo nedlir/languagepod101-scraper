@@ -43,3 +43,6 @@ Version 0.5.4
 - changed zfill to 3 instead of 2
 - added try-block for 'data-collection-entries' from quique
 
+Version 0.5.5
+===========
+- fixed recursive directory creation

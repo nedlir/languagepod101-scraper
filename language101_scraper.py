@@ -27,7 +27,7 @@ import logging
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 5
-PATCH_LEVEL = 4
+PATCH_LEVEL = 5
 
 VERSION_STRING = str(MAJOR_VERSION) + "." + \
     str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
@@ -94,7 +94,7 @@ class LanguagePod101Downloader:
         cookiepath = expanduser("~") + "/.config/languagepod101/"
         cookie_file = "lastsession"
         if not path.exists(cookiepath):
-            mkdir(cookiepath)
+            os.makedirs(cookiepath)
         with open(cookiepath + cookie_file, 'wb') as f:
             pickle.dump(session_cookie, f)
 
@@ -324,7 +324,7 @@ class LanguagePod101Downloader:
 
         pathway_name = pathway_url.split('/')[-2]
         if not os.path.isdir(pathway_name):
-            os.mkdir(pathway_name)
+            os.makedirs(pathway_name)
 
         return [pathway_name, lessons_urls]
 
@@ -342,7 +342,7 @@ class LanguagePod101Downloader:
             exit(1)
         level_name = url_parts[-1]
         if not os.path.isdir(level_name):
-            os.mkdir(level_name)
+            os.makedirs(level_name)
         pathways_urls = self.get_pathways_urls(level_url)
         return [level_name, pathways_urls]
 
@@ -384,7 +384,7 @@ class LanguagePod101Downloader:
         stackpath = expanduser("~") + "/.config/languagepod101/"
         stack_file = "laststack"
         if not path.exists(stackpath):
-            mkdir(stackpath)
+            os.makedirs(stackpath)
         with open(stackpath + stack_file, 'wb') as f:
             pickle.dump(stack, f)
         logging.info("Download stack stored")
@@ -574,7 +574,7 @@ def get_input_arguments():
 def setupLoging():
     logingpath = expanduser("~") + "/.local/share/languagepod101/"
     if not path.exists(logingpath):
-        os.mkdir(logingpath)
+        os.makedirs(logingpath)
     logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                         datefmt='%m-%d %H:%M',
