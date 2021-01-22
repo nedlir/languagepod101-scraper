@@ -46,3 +46,7 @@ Version 0.5.4
 Version 0.5.5
 ===========
 - fixed recursive directory creation
+
+Version 0.5.6
+===========
+- fixed error that prevented a level download

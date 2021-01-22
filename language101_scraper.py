@@ -27,7 +27,7 @@ import logging
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 5
-PATCH_LEVEL = 5
+PATCH_LEVEL = 6
 
 VERSION_STRING = str(MAJOR_VERSION) + "." + \
     str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
@@ -349,11 +349,11 @@ class LanguagePod101Downloader:
     def create_stack_for_level(self, level_url):
         stack = dict()
         [level_name, pathways_urls] = self.download_level(level_url)
-        logging.info(pathways_url)
+        logging.info(pathways_urls)
         stack["version"] = __version__
         stack["lesson"] = dict()
         stack["start_url"] = level_url
-        for i in pathways_url:
+        for i in pathways_urls:
             [pathway_name, lessons] = self.download_pathway(i)
             logging.info(lessons)
             for j in lessons:
@@ -375,10 +375,19 @@ class LanguagePod101Downloader:
         return stack
 
     def create_download_stack(self, level_url):
-        if self.check_for_lessons_library(level_url):
-            return self.create_stack_for_level(level_url)
-        else:
-            return self.create_stack_for_lesson(level_url)
+        returnvalue = dict()
+        try:
+            logging.debug("Trying level download")
+            returnvalue = self.create_stack_for_level(level_url)
+            if not returnvalue["lesson"]:
+                logging.debug("Returned empty level")
+                logging.debug("Assuming lesson download")
+                returnvalue = self.create_stack_for_lesson(level_url)
+        except Exception as e:
+            logging.warning(e)
+            logging.debug("Assuming lesson download")
+            returnvalue = self.create_stack_for_lesson(level_url)
+        return returnvalue
 
     def save_download_stack(self, stack):
         stackpath = expanduser("~") + "/.config/languagepod101/"
