@@ -27,7 +27,7 @@ import logging
 
 MAJOR_VERSION = 0
 MINOR_VERSION = 5
-PATCH_LEVEL = 6
+PATCH_LEVEL = 7
 
 VERSION_STRING = str(MAJOR_VERSION) + "." + \
     str(MINOR_VERSION) + "." + str(PATCH_LEVEL)
@@ -53,6 +53,7 @@ class LanguagePod101Downloader:
     def __init__(self, args):
         self.m_arguments = vars(args)
         self.sanity_check()
+        self.pdf_sanity_issue_warned = False
 
     def sanity_check(self):
         boolean_values = ["video", "audio", "document", "anki_deck"]
@@ -396,7 +397,7 @@ class LanguagePod101Downloader:
             os.makedirs(stackpath)
         with open(stackpath + stack_file, 'wb') as f:
             pickle.dump(stack, f)
-        logging.info("Download stack stored")
+        logging.debug("Download stack stored")
 
     def load_download_stack(self):
         stackpath = expanduser("~") + "/.config/languagepod101/"
@@ -414,7 +415,7 @@ class LanguagePod101Downloader:
                         logging.info("Rewriting version of download stack")
                         stack["version"] = __version__
                         self.save_download_stack(stack)
-                    logging.info("Download stack restored")
+                    logging.debug("Download stack restored")
                     return stack
                 except Exception as e:
                     logging.error(e)
@@ -425,6 +426,19 @@ class LanguagePod101Downloader:
             logging.debug("No download stack found")
         return None
 
+    def is_sane_pdf(self, file_name, content):
+        """We check if we are on a trial account and exceeded ourdownload limit for the pdfs"""
+        sorry = "Sorry, you can only download 10 PDFs during the 7-Day Trial. Please sign up for a Basic or Premium membership to access additional PDF"
+        needle = sorry.split(".")[0]
+        returnvalue = str(content).find(needle) == -1
+        if not returnvalue:
+            if not self.pdf_sanity_issue_warned:
+                logging.warning(sorry)
+                self.pdf_sanity_issue_warned = True
+            logging.warning(f"Insane PDF {file_name} detected")
+
+        return returnvalue
+
     def save_file(self, file_url, file_name):
         """Save file on local folder"""
         if os.path.isfile(file_name):
@@ -433,9 +447,13 @@ class LanguagePod101Downloader:
 
         try:
             lesson_response = self.m_session.get(file_url)
+            if file_name[-3:].lower() == "pdf":
+                if not self.is_sane_pdf(file_name, lesson_response.content):
+                    return  # return if sanity_check fails
+
             with open(file_name, 'wb') as f:
                 f.write(lesson_response.content)
-                logging.debug(f'{file_name} saved on local device!')
+                logging.info(f'{file_name} saved on local device!')
         except Exception as e:
             logging.warning(e)
             logging.warning(f'Failed to save {file_name} on local device.')

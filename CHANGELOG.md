@@ -50,3 +50,8 @@ Version 0.5.5
 Version 0.5.6
 ===========
 - fixed error that prevented a level download
+
+Version 0.5.7
+===========
+- hand out warnings, if on a trial account and trying to download more than 10 pdfs
+- outputs donwloaded files to the console
