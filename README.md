@@ -131,6 +131,6 @@ The license below refers only to the script and not to the downloaded content.
 
 ![broken](readme/status.gif)
 
-It's broken, I will fix it, maybe...
+~~It's broken, I will fix it, maybe...~~
 
 

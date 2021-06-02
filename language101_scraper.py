@@ -3,6 +3,7 @@
 # japanesepod101.com, spanishpod101.com, chineseclass101.com and more!
 
 import argparse
+import time
 
 from sys import exit
 from urllib.parse import urlparse
@@ -12,6 +13,7 @@ import requests
 from bs4 import BeautifulSoup
 
 
+
 parser = argparse.ArgumentParser(description='Scrape full language courses by Innovative Language.')
 parser.add_argument('-u', '--username', help='Username (email)')
 parser.add_argument('-p', '--password', help='Password for the course')
@@ -19,13 +21,12 @@ parser.add_argument('--url', help='URL for the first lesson of the course')
 
 args = parser.parse_args()
 
-
 USERNAME = args.username or input('Username(mail): ')
 PASSWORD = args.password or input('Password: ')
 COURSE_URL = args.url or input('Please insert first lesson URL of the desired course, for example:\n'
-    ' * https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116\n'
-    ' * https://www.spanishpod101.com/lesson/basic-bootcamp-1-a-pleasure-to-meet-you/?lp=425\n'
-    ' * https://www.chineseclass101.com/lesson/absolute-beginner-1-meeting-whats-your-name/?lp=208\n')
+                               ' * https://www.japanesepod101.com/lesson/lower-beginner-1-a-formal-japanese-introduction/?lp=116\n'
+                               ' * https://www.spanishpod101.com/lesson/basic-bootcamp-1-a-pleasure-to-meet-you/?lp=425\n'
+                               ' * https://www.chineseclass101.com/lesson/absolute-beginner-1-meeting-whats-your-name/?lp=208\n')
 
 LOGIN_DATA = {
     'amember_login': USERNAME,
@@ -35,9 +36,11 @@ obj = urlparse(COURSE_URL)
 SOURCE_URL = f'{obj.scheme}://{obj.netloc}'
 LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
 
-# Logins to the website:
+# Login to the website with a user agent to bypass fw:
 print('Establishing a new session...')
-with requests.Session() as session:
+session = requests.Session()
+session.headers.update({'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'})
+with session:
     try:
         print(f'Trying to login to {SOURCE_URL}')
         course_response = session.post(LOGIN_URL, data=LOGIN_DATA)
@@ -102,7 +105,7 @@ with requests.Session() as session:
                     print(f'Successfully retrieved URL: {file_url}')
 
                     # Creates a clean file name string with prefix, body and suffix of file name:
-                    
+
                     # Numbering of file using the 'file_index' variable
                     file_prefix = str(file_index).zfill(2)
 
@@ -115,7 +118,7 @@ with requests.Session() as session:
 
                     file_suffix = file_url.split('/')[-1]
 
-                    # Verifis clean version of file name by removing junk sufix string that may appear:
+                    # Verifies clean version of file name by removing junk suffix string that may appear:
                     if 'dialog' in file_suffix.lower() or 'dialogue' in file_suffix.lower():
                         file_suffix = 'Dialogue'
                     elif 'review' in file_suffix.lower():
@@ -133,6 +136,8 @@ with requests.Session() as session:
                         with open(file_name, 'wb') as f:
                             f.write(lesson_response.content)
                             print(f'{file_name} saved on local device!')
+                            print('Pausing before next file...\n')
+                            time.sleep(5)
                     except Exception as e:
                         print(e)
                         print(f'Failed to save {file_name} on local device.')
