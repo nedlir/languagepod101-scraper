@@ -127,10 +127,5 @@ The license below refers only to the script and not to the downloaded content.
 
 ## :speech_balloon: Status and changelog
 
-- **31.03.2021**:
-
-![broken](readme/status.gif)
-
-~~It's broken, I will fix it, maybe...~~
-
-
+- **11.05.2021**:
+Headers and waiting time added, script is alive again.
