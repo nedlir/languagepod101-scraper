@@ -127,5 +127,8 @@ The license below refers only to the script and not to the downloaded content.
 
 ## :speech_balloon: Status and changelog
 
+- **23/03/2022**:
+Added support for basic video downloading (nothing fancy, just m4v and mp4 files)
+Added error handling for when a lesson library/lesson contents URL is used instead of the first lesson (user is now warned)
 - **11.05.2021**:
 Headers and waiting time added, script is alive again.
