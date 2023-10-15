@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 
 import requests
 from bs4 import BeautifulSoup
+import re
 
 parser = argparse.ArgumentParser(description='Scrape full language courses by Innovative Language.')
 parser.add_argument('-u', '--username', help='Username (email)')
@@ -76,14 +77,30 @@ with session:
         print("Failed to parse the course's webpage, 'lxml' package might be missing.")
         exit(1)
 
-    soup_urls = course_soup.find_all('option')
+    soup_urls = course_soup.find_all('div', {'class':'r101-pathway-context__sidebar js-pathway-context-sidebar js-pathway-context-data'})
+    soup_urls_string = str(soup_urls).replace('\\','') # removes \\ in stringifed lxml
     course_urls = list()
 
-    for u in soup_urls:
-        if u['value'].startswith('/lesson/'):
-            course_urls.append(SOURCE_URL + u['value'])
+    ASSESSMENT_URL = '/assessment'
+    LESSON_URL = '/lesson'
+    ENDING_URL = '&quot'
+    POSITIVE_LOOKAHEAD_ASSERTION = '?='
+    
+    try:
+        '''
+        .*? matches any characters (non-greedy) between the word and the end of the sentence.
+        A(?=&B) will match an A, followed by a B, but won't return the B as part of the match
+        '''
+        pattern = r'(/assessment.*?|/lesson.*?)(?=&quot)'
+        matches = re.findall(pattern, soup_urls_string)
+        course_urls = [SOURCE_URL + match for match in matches]
 
-    print('Lessons URLs successfully listed.')
+    except AttributeError:
+        # ASSESSMENT_URL, LESSON_URL, ENDING_URL not found in the div
+        print('Attribute Error occured')
+        course_urls = []
+
+    print('Lessons URLs successfully listed')
 
     # Traverses list of course's lesson urls and downloads them:
     file_index = 1  # Used for numbering of file name strings
@@ -122,7 +139,7 @@ with session:
                     # Main body of file name is taken from page's title
                     file_body = lesson_soup.title.text
                     # Avoids OSError: [Errno 22] while file writing:
-                    invalid_chars = '\/?:*"<>|'
+                    invalid_chars = r'\/?:*"<>|'
                     for char in invalid_chars:
                         file_body = file_body.replace(char, "")
 
@@ -186,7 +203,7 @@ with session:
                     # Main body of file name is taken from page's title
                     file_body = lesson_soup.title.text
                     # Avoids OSError: [Errno 22] while file writing:
-                    invalid_chars = '\/?:*"<>|'
+                    invalid_chars = r'\/?:*"<>|'
                     for char in invalid_chars:
                         file_body = file_body.replace(char, "")
 
