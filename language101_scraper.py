@@ -4,6 +4,7 @@
 
 import argparse
 import time
+import json
 from sys import exit
 from urllib.parse import urlparse
 
@@ -76,12 +77,16 @@ with session:
         print("Failed to parse the course's webpage, 'lxml' package might be missing.")
         exit(1)
 
-    soup_urls = course_soup.find_all('option')
+    soup_urls = course_soup.find_all('div')
     course_urls = list()
 
     for u in soup_urls:
-        if u['value'].startswith('/lesson/'):
-            course_urls.append(SOURCE_URL + u['value'])
+        if "class" in u.attrs:
+            if "js-pathway-context-data" in u.attrs['class']:
+                obj = json.loads(u.attrs['data-collection-entities'])
+                for lesson in obj:
+                    if lesson['url'].startswith('/lesson/'):
+                        course_urls.append(SOURCE_URL + lesson['url'])
 
     print('Lessons URLs successfully listed.')
 
