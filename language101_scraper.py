@@ -44,7 +44,6 @@ LOGIN_DATA = {
 obj = urlparse(COURSE_URL)
 SOURCE_URL = f'{obj.scheme}://{obj.netloc}'
 LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
-UA = ''
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 COOKIES_FILE = os.path.join(SCRIPT_DIR, 'cookies.txt')
@@ -78,13 +77,13 @@ def load_cookies(filename=COOKIES_FILE):
 def load_ua(filename=UA_FILE):
     try:
         with open(filename, 'r') as file:
-            UA = file.read()
+            return file.read()
     except FileNotFoundError:
         print('Error: Please make a "ua.txt" file containing the User Agent of your browser in the directory of the python script.'
             + 'You can display your User Agent at https://dnschecker.org/user-agent-info.php.')
-        exit(1)
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
+    exit(1)
 
 # Function to extract numeric prefixes with leading zeros
 def get_existing_prefixes(directory):
@@ -114,6 +113,21 @@ def check_login_required(html_content):
     sign_in_buttons = soup.find_all(['button', 'a'], string=re.compile(r'Sign In', re.IGNORECASE))
     return len(sign_in_buttons) > 0
 
+def check_http_error(response):
+    if response.status_code == 200:
+        return
+    elif response.status_code == 403:
+        print(f"Error: 403 Forbidden")
+    elif response.status_code >= 400:
+        print(f"Error: Received status code {response.status_code}")
+        # Optionally, handle specific error codes
+        if response.status_code == 404:
+            print("Resource not found (404).")
+        elif response.status_code == 500:
+            print("Server error (500).")
+    else:
+        print(f"Received unexpected status code: {response.status_code}")
+    exit(1)
 
 class MediaDownloader:
     def __init__(self, session, source_url):
@@ -140,6 +154,7 @@ class MediaDownloader:
 
         try:
             response = self.session.get(file_url)
+            check_http_error(response)
             with open(file_name, 'wb') as f:
                 f.write(response.content)
             print(f'{file_name} saved on local device!')
@@ -220,6 +235,7 @@ def process_lesson(session, lesson_url, file_index, source_url):
     """Process a single lesson"""
     try:
         lesson_source = session.get(lesson_url)
+        check_http_error(lesson_source)
         lesson_soup = BeautifulSoup(lesson_source.text, 'lxml')
         
         if check_for_captcha(lesson_soup):
@@ -246,6 +262,7 @@ def extract_course_urls(session, course_url, source_url):
     """Extract all lesson URLs from the course page"""
     try:
         course_source = session.get(course_url)
+        check_http_error(course_source)
         course_soup = BeautifulSoup(course_source.text, 'lxml')
         
         if check_for_captcha(course_soup):
@@ -265,6 +282,8 @@ def extract_course_urls(session, course_url, source_url):
                         print("URL→" + full_url)
 
         print('Lessons URLs successfully listed.')
+        #if len(course_urls) == 0:
+        #    print(course_source.text)
         return course_urls
 
     except Exception as e:
@@ -286,7 +305,7 @@ def validate_course_url(url):
 def main():
     print('Establishing a new session...')
     session = None
-    load_ua()
+    UA = load_ua()
     
     # Try to load existing cookies first
     if os.path.exists(COOKIES_FILE):
@@ -297,6 +316,7 @@ def main():
         if session:
             try:
                 test_response = session.get(COURSE_URL)
+                check_http_error(test_response)
                 if not check_login_required(test_response.text):
                     print("Successfully authenticated using cookies")
                 else:
@@ -316,12 +336,13 @@ def main():
         try:
             print(f'Trying to login to {SOURCE_URL}')
             course_response = session.post(LOGIN_URL, data=LOGIN_DATA)
+            check_http_error(course_response)
             print(f'Successfully logged in as {USERNAME}')
             save_cookies(session)
         except Exception as e:
             print(f'Login Failed: {e}')
             return
-
+    
     # Validate course URL
     if not validate_course_url(COURSE_URL):
         return
