@@ -113,9 +113,9 @@ def check_login_required(html_content):
     sign_in_buttons = soup.find_all(['button', 'a'], string=re.compile(r'Sign In', re.IGNORECASE))
     return len(sign_in_buttons) > 0
 
-def check_http_error(response):
+def check_http_error(response, fail_safe=False):
     if response.status_code == 200:
-        return
+        return True
     elif response.status_code == 403:
         print(f"Error: 403 Forbidden")
     elif response.status_code >= 400:
@@ -127,6 +127,8 @@ def check_http_error(response):
             print("Server error (500).")
     else:
         print(f"Received unexpected status code: {response.status_code}")
+    if fail_safe:
+        return False
     exit(1)
 
 class MediaDownloader:
@@ -149,18 +151,20 @@ class MediaDownloader:
     def download_file(self, file_url, file_name):
         """Download and save a file"""
         if Path(file_name).exists():
-            print(f'File {file_name} exists already, continuing...')
+            #print(f'\tFile {file_name} exists already, continuing...')
             return False
 
         try:
             response = self.session.get(file_url)
-            check_http_error(response)
+            ok = check_http_error(response, True)
+            if not ok:
+                return
             with open(file_name, 'wb') as f:
                 f.write(response.content)
-            print(f'{file_name} saved on local device!')
+            print(f'\t{file_name} saved on local device!')
             return True
         except Exception as e:
-            print(f'Failed to save {file_name}: {e}')
+            print(f'\tFailed to save {file_name}: {e}')
             return False
 
     def get_file_url(self, element, url_attributes):
@@ -366,7 +370,7 @@ def main():
 
         if process_lesson(session, lesson_url, file_index, SOURCE_URL):
             file_index += 1
-            wait = randint(30, 300)
+            wait = randint(110, 300)
             print(f'Pausing {wait}s before scraping next lesson...\n')
             time.sleep(wait)
         else:
