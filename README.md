@@ -127,6 +127,21 @@ The license below refers only to the script and not to the downloaded content.
 
 ## :speech_balloon: Status and changelog
 
+- **14.12.2024**
+  [@BenoitAnastay](https://github.com/BenoitAnastay) and [tassa-yoniso-manasi-karoto]([) ](https://github.com/tassa-yoniso-manasi-karoto) created mor modular code and downloading specific lessons. You need to subscribe for premium if you wnat to download advanced material.
+
+  Also, now you will be prompted to have a captcha every now and then, the script will not attempt to circuvment it in any way.
+
+  As mentioned before, if you do enjoy the service langpod guys give you, pay them!
+
+  The updates:
+  -modular functions
+- ***require the user to provide the User Agent of his browser in the ua.txt file before running the script***
+- PDFs support
+- try to auth using cookies from a Netscape cookies.txt: you can use [cookies exported from your browser](https://github.com/hrdl-github/cookies-txt), this can help mitigate Captchas
+- reworked scraping: longer sleeping and Captcha detection
+
+
 - **23.03.2022**:
 Added support for basic video downloading (nothing fancy, just m4v and mp4 files)
 Added error handling for when a lesson library/lesson contents URL is used instead of the first lesson (user is now warned)
