@@ -48,6 +48,7 @@ LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 COOKIES_FILE = os.path.join(SCRIPT_DIR, 'cookies.txt')
 UA_FILE = os.path.join(SCRIPT_DIR, 'ua.txt')
+PREFIX_DIGITS = 0
 
 
 def save_cookies(session, filename=COOKIES_FILE):
@@ -89,7 +90,7 @@ def load_ua(filename=UA_FILE):
 def get_existing_prefixes(directory):
     prefixes = set()
     for filename in os.listdir(directory):
-        match = re.match(r"^(\d{2})", filename)
+        match = re.match(r"^(\d+)", filename)
         if match:
             prefixes.add(match.group(1))  # Add the number as a string (preserving leading zeros)
     return prefixes
@@ -247,7 +248,7 @@ def process_lesson(session, lesson_url, file_index, source_url):
             exit(1)
 
         processor = MediaProcessor(session, source_url)
-        file_prefix = str(file_index).zfill(2)
+        file_prefix = str(file_index).zfill(PREFIX_DIGITS)
         
         print(f'Processing Lesson {file_prefix} - {lesson_soup.title.text}')
         
@@ -262,7 +263,7 @@ def process_lesson(session, lesson_url, file_index, source_url):
         return False
 
     
-def extract_course_urls(session, course_url, source_url):
+def extract_lesson_urls(session, course_url, source_url):
     """Extract all lesson URLs from the course page"""
     try:
         course_source = session.get(course_url)
@@ -273,7 +274,7 @@ def extract_course_urls(session, course_url, source_url):
             print("Too many requests. Captcha required.")
             exit(1)
 
-        course_urls = []
+        lesson_urls = []
         soup_urls = course_soup.find_all('div')
         
         for u in soup_urls:
@@ -282,13 +283,13 @@ def extract_course_urls(session, course_url, source_url):
                 for lesson in obj:
                     if lesson['url'].startswith('/lesson/'):
                         full_url = source_url + lesson['url']
-                        course_urls.append(full_url)
+                        lesson_urls.append(full_url)
                         print("URL→" + full_url)
 
         print('Lessons URLs successfully listed.')
-        #if len(course_urls) == 0:
+        #if len(lesson_urls) == 0:
         #    print(course_source.text)
-        return course_urls
+        return lesson_urls
 
     except Exception as e:
         print(f"Error extracting course URLs: {e}")
@@ -347,19 +348,17 @@ def main():
             print(f'Login Failed: {e}')
             return
     
-    # Validate course URL
     if not validate_course_url(COURSE_URL):
         return
 
-    # Extract course URLs
-    course_urls = extract_course_urls(session, COURSE_URL, SOURCE_URL)
-    if course_urls is None or len(course_urls) == 0:
+    lesson_urls = extract_lesson_urls(session, COURSE_URL, SOURCE_URL)
+    if lesson_urls is None or len(lesson_urls) == 0:
         print("No lesson URLs found.")
         return
-
+    PREFIX_DIGITS = len(lesson_urls)
     # Process each lesson
     file_index = 1
-    for lesson_url in course_urls:
+    for lesson_url in lesson_urls:
         file_prefix = str(file_index).zfill(2)
         existing_prefixes = get_existing_prefixes("./")
         
