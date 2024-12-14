@@ -1,24 +1,3 @@
-**Works as of December 2024,** maybe for a little longer too. In any case, I don't really plan to maintain this.
-
-LanguagePod101 isn't great to learn languages but it's OK for beginners or as a hands-free option while busy with something else. (Though they do deserve credit for still providing users the option to download DRM-free the content they pay for.)
-
-
-**Improvements of this fork:**
-
-- PDFs support
-- try to auth using cookies from a Netscape cookies.txt: you can use [cookies exported from your browser](https://github.com/hrdl-github/cookies-txt), this can help mitigate Captchas
-- reworked scraping: longer sleeping and Captcha detection
-- ***require the user to provide the User Agent of his browser in the ua.txt file***
-- code refactored
-
-**Note:** This fork doesn't provide systematic scraping, it scrapes only the specific lesson course associated with the URL provided.
-
-Original Readme:
-<hr>
-
-<hr>
-
-
 <h1 align="center">:zap: languagepod101-scraper	:zap:</h1>
 <p align="center">
   <img src="readme\language_selection.jpg" alt="Language selection">
@@ -147,6 +126,21 @@ The license below refers only to the script and not to the downloaded content.
 [License - MIT](LICENSE.md)
 
 ## :speech_balloon: Status and changelog
+
+- **14.12.2024**
+  [@BenoitAnastay](https://github.com/BenoitAnastay) and [tassa-yoniso-manasi-karoto]([) ](https://github.com/tassa-yoniso-manasi-karoto) created mor modular code and downloading specific lessons. You need to subscribe for premium if you wnat to download advanced material.
+
+  Also, now you will be prompted to have a captcha every now and then, the script will not attempt to circuvment it in any way.
+
+  As mentioned before, if you do enjoy the service langpod guys give you, pay them!
+
+  The updates:
+  -modular functions
+- ***require the user to provide the User Agent of his browser in the ua.txt file before running the script***
+- PDFs support
+- try to auth using cookies from a Netscape cookies.txt: you can use [cookies exported from your browser](https://github.com/hrdl-github/cookies-txt), this can help mitigate Captchas
+- reworked scraping: longer sleeping and Captcha detection
+
 
 - **23.03.2022**:
 Added support for basic video downloading (nothing fancy, just m4v and mp4 files)
