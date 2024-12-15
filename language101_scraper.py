@@ -117,15 +117,15 @@ def check_login_required(html_content):
 def check_http_error(response, fail_safe=False):
     if response.status_code == 200:
         return True
-    elif response.status_code == 403:
-        print(f"Error: 403 Forbidden")
     elif response.status_code >= 400:
-        print(f"Error: Received status code {response.status_code}")
-        # Optionally, handle specific error codes
-        if response.status_code == 404:
-            print("Resource not found (404).")
+        if response.status_code == 403:
+            print("Error: 403 Forbidden")
+        elif response.status_code == 404:
+            print("Error: 404 Resource not found.")
         elif response.status_code == 500:
-            print("Server error (500).")
+            print("Error: 500 Server error.")
+        else:
+            print(f"Error: Received status code {response.status_code}")
     else:
         print(f"Received unexpected status code: {response.status_code}")
     if fail_safe:
