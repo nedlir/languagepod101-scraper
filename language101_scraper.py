@@ -355,7 +355,7 @@ def main():
     if lesson_urls is None or len(lesson_urls) == 0:
         print("No lesson URLs found.")
         return
-    PREFIX_DIGITS = len(lesson_urls)
+    PREFIX_DIGITS = len(str(lesson_urls))
     # Process each lesson
     file_index = 1
     for lesson_url in lesson_urls:
@@ -369,9 +369,10 @@ def main():
 
         if process_lesson(session, lesson_url, file_index, SOURCE_URL):
             file_index += 1
-            wait = randint(110, 300)
-            print(f'Pausing {wait}s before scraping next lesson...\n')
-            time.sleep(wait)
+            if file_index < len(lesson_urls):
+                wait = randint(110, 300)
+                print(f'Pausing {wait}s before scraping next lesson...\n')
+                time.sleep(wait)
         else:
             break
 
