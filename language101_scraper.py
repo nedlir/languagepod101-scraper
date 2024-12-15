@@ -89,7 +89,7 @@ def load_ua(filename=UA_FILE):
 def get_existing_prefixes(directory):
     prefixes = set()
     for filename in os.listdir(directory):
-        match = re.match(r"^(\d{2})", filename)
+        match = re.match(r"^(\d+)", filename)
         if match:
             prefixes.add(match.group(1))  # Add the number as a string (preserving leading zeros)
     return prefixes
@@ -113,20 +113,22 @@ def check_login_required(html_content):
     sign_in_buttons = soup.find_all(['button', 'a'], string=re.compile(r'Sign In', re.IGNORECASE))
     return len(sign_in_buttons) > 0
 
-def check_http_error(response):
+def check_http_error(response, fail_safe=False):
     if response.status_code == 200:
-        return
-    elif response.status_code == 403:
-        print(f"Error: 403 Forbidden")
+        return True
     elif response.status_code >= 400:
-        print(f"Error: Received status code {response.status_code}")
-        # Optionally, handle specific error codes
-        if response.status_code == 404:
-            print("Resource not found (404).")
+        if response.status_code == 403:
+            print("Error: 403 Forbidden")
+        elif response.status_code == 404:
+            print("Error: 404 Resource not found.")
         elif response.status_code == 500:
-            print("Server error (500).")
+            print("Error: 500 Server error.")
+        else:
+            print(f"Error: Received status code {response.status_code}")
     else:
         print(f"Received unexpected status code: {response.status_code}")
+    if fail_safe:
+        return False
     exit(1)
 
 class MediaDownloader:
@@ -149,18 +151,20 @@ class MediaDownloader:
     def download_file(self, file_url, file_name):
         """Download and save a file"""
         if Path(file_name).exists():
-            print(f'File {file_name} exists already, continuing...')
+            #print(f'\tFile {file_name} exists already, continuing...')
             return False
 
         try:
             response = self.session.get(file_url)
-            check_http_error(response)
+            ok = check_http_error(response, True)
+            if not ok:
+                return
             with open(file_name, 'wb') as f:
                 f.write(response.content)
-            print(f'{file_name} saved on local device!')
+            print(f'\t{file_name} saved on local device!')
             return True
         except Exception as e:
-            print(f'Failed to save {file_name}: {e}')
+            print(f'\tFailed to save {file_name}: {e}')
             return False
 
     def get_file_url(self, element, url_attributes):
@@ -206,7 +210,7 @@ class MediaProcessor:
 
     def process_pdf(self, soup, file_prefix):
         """Process PDF files"""
-        pdf_links = soup.find_all('a', href=lambda x: x and x.endswith('.pdf'))
+        pdf_links = soup.find_all('a', href=lambda x: x and '.pdf' in x)
         pdfnum = 0
         for pdf in pdf_links:
             pdfnum += 1
@@ -231,7 +235,7 @@ class MediaProcessor:
             return 'Review'
         return 'Main Lesson'
 
-def process_lesson(session, lesson_url, file_index, source_url):
+def process_lesson(session, lesson_url, file_index, source_url, prefix_digits):
     """Process a single lesson"""
     try:
         lesson_source = session.get(lesson_url)
@@ -243,7 +247,7 @@ def process_lesson(session, lesson_url, file_index, source_url):
             exit(1)
 
         processor = MediaProcessor(session, source_url)
-        file_prefix = str(file_index).zfill(2)
+        file_prefix = str(file_index).zfill(prefix_digits)
         
         print(f'Processing Lesson {file_prefix} - {lesson_soup.title.text}')
         
@@ -258,7 +262,7 @@ def process_lesson(session, lesson_url, file_index, source_url):
         return False
 
     
-def extract_course_urls(session, course_url, source_url):
+def extract_lesson_urls(session, course_url, source_url):
     """Extract all lesson URLs from the course page"""
     try:
         course_source = session.get(course_url)
@@ -269,7 +273,7 @@ def extract_course_urls(session, course_url, source_url):
             print("Too many requests. Captcha required.")
             exit(1)
 
-        course_urls = []
+        lesson_urls = []
         soup_urls = course_soup.find_all('div')
         
         for u in soup_urls:
@@ -278,13 +282,13 @@ def extract_course_urls(session, course_url, source_url):
                 for lesson in obj:
                     if lesson['url'].startswith('/lesson/'):
                         full_url = source_url + lesson['url']
-                        course_urls.append(full_url)
+                        lesson_urls.append(full_url)
                         print("URL→" + full_url)
 
         print('Lessons URLs successfully listed.')
-        #if len(course_urls) == 0:
+        #if len(lesson_urls) == 0:
         #    print(course_source.text)
-        return course_urls
+        return lesson_urls
 
     except Exception as e:
         print(f"Error extracting course URLs: {e}")
@@ -343,20 +347,18 @@ def main():
             print(f'Login Failed: {e}')
             return
     
-    # Validate course URL
     if not validate_course_url(COURSE_URL):
         return
 
-    # Extract course URLs
-    course_urls = extract_course_urls(session, COURSE_URL, SOURCE_URL)
-    if course_urls is None or len(course_urls) == 0:
+    lesson_urls = extract_lesson_urls(session, COURSE_URL, SOURCE_URL)
+    if lesson_urls is None or len(lesson_urls) == 0:
         print("No lesson URLs found.")
         return
-
+    prefix_digits = len(str(len(lesson_urls)))
     # Process each lesson
     file_index = 1
-    for lesson_url in course_urls:
-        file_prefix = str(file_index).zfill(2)
+    for lesson_url in lesson_urls:
+        file_prefix = str(file_index).zfill(prefix_digits)
         existing_prefixes = get_existing_prefixes("./")
         
         if file_prefix in existing_prefixes:
@@ -364,11 +366,12 @@ def main():
             file_index += 1
             continue
 
-        if process_lesson(session, lesson_url, file_index, SOURCE_URL):
+        if process_lesson(session, lesson_url, file_index, SOURCE_URL, prefix_digits):
             file_index += 1
-            wait = randint(30, 300)
-            print(f'Pausing {wait}s before scraping next lesson...\n')
-            time.sleep(wait)
+            if file_index < len(lesson_urls):
+                wait = randint(110, 300)
+                print(f'Pausing {wait}s before scraping next lesson...\n')
+                time.sleep(wait)
         else:
             break
 
