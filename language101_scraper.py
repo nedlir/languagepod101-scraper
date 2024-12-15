@@ -211,7 +211,7 @@ class MediaProcessor:
 
     def process_pdf(self, soup, file_prefix):
         """Process PDF files"""
-        pdf_links = soup.find_all('a', href=lambda x: x and x.endswith('.pdf'))
+        pdf_links = soup.find_all('a', href=lambda x: x and '.pdf' in x)
         pdfnum = 0
         for pdf in pdf_links:
             pdfnum += 1
