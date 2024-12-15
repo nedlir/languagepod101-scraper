@@ -48,7 +48,6 @@ LOGIN_URL = f'{SOURCE_URL}/member/login_new.php'
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 COOKIES_FILE = os.path.join(SCRIPT_DIR, 'cookies.txt')
 UA_FILE = os.path.join(SCRIPT_DIR, 'ua.txt')
-PREFIX_DIGITS = 0
 
 
 def save_cookies(session, filename=COOKIES_FILE):
@@ -236,7 +235,7 @@ class MediaProcessor:
             return 'Review'
         return 'Main Lesson'
 
-def process_lesson(session, lesson_url, file_index, source_url):
+def process_lesson(session, lesson_url, file_index, source_url, prefix_digits):
     """Process a single lesson"""
     try:
         lesson_source = session.get(lesson_url)
@@ -248,7 +247,7 @@ def process_lesson(session, lesson_url, file_index, source_url):
             exit(1)
 
         processor = MediaProcessor(session, source_url)
-        file_prefix = str(file_index).zfill(PREFIX_DIGITS)
+        file_prefix = str(file_index).zfill(prefix_digits)
         
         print(f'Processing Lesson {file_prefix} - {lesson_soup.title.text}')
         
@@ -355,11 +354,11 @@ def main():
     if lesson_urls is None or len(lesson_urls) == 0:
         print("No lesson URLs found.")
         return
-    PREFIX_DIGITS = len(str(lesson_urls))
+    prefix_digits = len(str(len(lesson_urls)))
     # Process each lesson
     file_index = 1
     for lesson_url in lesson_urls:
-        file_prefix = str(file_index).zfill(2)
+        file_prefix = str(file_index).zfill(prefix_digits)
         existing_prefixes = get_existing_prefixes("./")
         
         if file_prefix in existing_prefixes:
@@ -367,7 +366,7 @@ def main():
             file_index += 1
             continue
 
-        if process_lesson(session, lesson_url, file_index, SOURCE_URL):
+        if process_lesson(session, lesson_url, file_index, SOURCE_URL, prefix_digits):
             file_index += 1
             if file_index < len(lesson_urls):
                 wait = randint(110, 300)
